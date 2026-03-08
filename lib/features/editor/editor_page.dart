@@ -31,7 +31,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         .where((t) => t.id == widget.templateId)
         .firstOrNull;
     if (template != null) {
-      ref.read(editorProvider.notifier).setTemplate(template);
+      Future.microtask(() {
+        ref.read(editorProvider.notifier).setTemplate(template);
+      });
     }
   }
 
