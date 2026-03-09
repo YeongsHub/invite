@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_colors.dart';
 
 class AppTextStyles {
   AppTextStyles._();
@@ -32,7 +33,7 @@ class AppTextStyles {
     fontFamily: 'serif',
     letterSpacing: 2.0,
     height: 1.4,
-    color: Color(0xFF4A3728),
+    color: AppColors.weddingText,
   );
 
   static const TextStyle weddingBody = TextStyle(
@@ -41,7 +42,7 @@ class AppTextStyles {
     fontFamily: 'serif',
     letterSpacing: 0.8,
     height: 1.6,
-    color: Color(0xFF6B5B4E),
+    color: AppColors.weddingBodyText,
   );
 
   // Funeral — dignified, generous letter-spacing
@@ -50,7 +51,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w400,
     letterSpacing: 3.0,
     height: 1.5,
-    color: Color(0xFF2C2C34),
+    color: AppColors.funeralTitleText,
   );
 
   static const TextStyle funeralBody = TextStyle(
@@ -58,7 +59,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w300,
     letterSpacing: 0.6,
     height: 1.7,
-    color: Color(0xFF5C5C66),
+    color: AppColors.funeralBodyText,
   );
 
   // Birthday — bold, playful, tight spacing
@@ -67,7 +68,7 @@ class AppTextStyles {
     fontWeight: FontWeight.w800,
     letterSpacing: -0.5,
     height: 1.2,
-    color: Color(0xFF1A1A2E),
+    color: AppColors.birthdayText,
   );
 
   static const TextStyle birthdayBody = TextStyle(
@@ -75,6 +76,6 @@ class AppTextStyles {
     fontWeight: FontWeight.w500,
     letterSpacing: 0.2,
     height: 1.5,
-    color: Color(0xFF1A1A2E),
+    color: AppColors.birthdayText,
   );
 }

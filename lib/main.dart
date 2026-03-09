@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:invite/core/router/app_router.dart';
+import 'package:invite/core/di/providers.dart';
 import 'package:invite/core/theme/app_theme.dart';
 
 void main() {
@@ -15,7 +15,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Invite',
       theme: AppTheme.light,
-      routerConfig: appRouter,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }
