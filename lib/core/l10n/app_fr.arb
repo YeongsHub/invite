@@ -1,0 +1,32 @@
+{
+  "@@locale": "fr",
+  "appTitle": "Invite",
+  "templates": "Modèles",
+  "editor": "Éditeur",
+  "addText": "Ajouter du texte",
+  "addImage": "Ajouter une image",
+  "addSticker": "Ajouter un sticker",
+  "undo": "Annuler",
+  "redo": "Rétablir",
+  "delete": "Supprimer",
+  "exportPng": "Exporter PNG",
+  "backgroundColor": "Couleur de fond",
+  "apply": "Appliquer",
+  "fontSize": "Taille de police",
+  "color": "Couleur",
+  "pickSticker": "Choisir un sticker",
+  "exportSuccess": "Enregistré dans {path}",
+  "@exportSuccess": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "Échec de l'exportation",
+  "wedding": "Mariage",
+  "funeral": "Funérailles",
+  "birthday": "Anniversaire",
+  "canvas": "Zone de dessin",
+  "savedTo": "Enregistré dans"
+}

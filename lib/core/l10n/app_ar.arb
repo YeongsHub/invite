@@ -1,0 +1,32 @@
+{
+  "@@locale": "ar",
+  "appTitle": "دعوة",
+  "templates": "القوالب",
+  "editor": "المحرر",
+  "addText": "إضافة نص",
+  "addImage": "إضافة صورة",
+  "addSticker": "إضافة ملصق",
+  "undo": "تراجع",
+  "redo": "إعادة",
+  "delete": "حذف",
+  "exportPng": "تصدير PNG",
+  "backgroundColor": "لون الخلفية",
+  "apply": "تطبيق",
+  "fontSize": "حجم الخط",
+  "color": "اللون",
+  "pickSticker": "اختر ملصقًا",
+  "exportSuccess": "تم الحفظ في {path}",
+  "@exportSuccess": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "فشل التصدير",
+  "wedding": "زفاف",
+  "funeral": "جنازة",
+  "birthday": "عيد ميلاد",
+  "canvas": "منطقة اللوحة",
+  "savedTo": "حفظ في"
+}

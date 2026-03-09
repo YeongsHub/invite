@@ -1,0 +1,32 @@
+{
+  "@@locale": "ja",
+  "appTitle": "インバイト",
+  "templates": "テンプレート",
+  "editor": "エディター",
+  "addText": "テキストを追加",
+  "addImage": "画像を追加",
+  "addSticker": "スタッカーを追加",
+  "undo": "元に戻す",
+  "redo": "やり直す",
+  "delete": "削除",
+  "exportPng": "PNGとして書き出す",
+  "backgroundColor": "背景色",
+  "apply": "適用",
+  "fontSize": "フォントサイズ",
+  "color": "色",
+  "pickSticker": "スタッカーを選択",
+  "exportSuccess": "{path}に保存しました",
+  "@exportSuccess": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "書き出しに失敗しました",
+  "wedding": "ウェディング",
+  "funeral": "葬儀",
+  "birthday": "誕生日",
+  "canvas": "キャンバスエリア",
+  "savedTo": "保存先"
+}

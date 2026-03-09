@@ -1,0 +1,32 @@
+{
+  "@@locale": "zh",
+  "appTitle": "邀请",
+  "templates": "模板",
+  "editor": "编辑器",
+  "addText": "添加文字",
+  "addImage": "添加图片",
+  "addSticker": "添加贴纸",
+  "undo": "撤销",
+  "redo": "重做",
+  "delete": "删除",
+  "exportPng": "导出PNG",
+  "backgroundColor": "背景颜色",
+  "apply": "应用",
+  "fontSize": "字体大小",
+  "color": "颜色",
+  "pickSticker": "选择贴纸",
+  "exportSuccess": "已保存到 {path}",
+  "@exportSuccess": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "exportFailed": "导出失败",
+  "wedding": "婚礼",
+  "funeral": "葬礼",
+  "birthday": "生日",
+  "canvas": "画布区域",
+  "savedTo": "保存到"
+}

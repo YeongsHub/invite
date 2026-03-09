@@ -1,18 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:invite/core/di/locale_provider.dart';
 import 'package:invite/core/router/app_router.dart';
 import 'package:invite/core/theme/app_colors.dart';
 import 'package:invite/core/theme/app_text_styles.dart';
 import 'package:invite/features/templates/data/template_data.dart';
 import 'package:invite/features/templates/models/template_model.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
-class TemplatesPage extends StatelessWidget {
+class TemplatesPage extends ConsumerWidget {
   const TemplatesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Templates')),
+      appBar: AppBar(
+        title: Text(l10n.templates),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language),
+            tooltip: 'Select language',
+            onPressed: () => _showLanguageSelector(context, ref),
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: TemplateCategory.values.map((category) {
@@ -21,6 +34,69 @@ class TemplatesPage extends StatelessWidget {
               .toList();
           return _CategorySection(category: category, templates: templates);
         }).toList(),
+      ),
+    );
+  }
+
+  void _showLanguageSelector(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) => _LanguageSelectorSheet(
+        currentLocale: ref.read(localeProvider),
+        onSelected: (locale) {
+          ref.read(localeProvider.notifier).state = locale;
+          Navigator.of(ctx).pop();
+        },
+      ),
+    );
+  }
+}
+
+class _LanguageSelectorSheet extends StatelessWidget {
+  const _LanguageSelectorSheet({
+    required this.currentLocale,
+    required this.onSelected,
+  });
+
+  final Locale currentLocale;
+  final ValueChanged<Locale> onSelected;
+
+  static const _languages = [
+    (locale: Locale('en'), nativeName: 'English'),
+    (locale: Locale('ko'), nativeName: '한국어'),
+    (locale: Locale('ja'), nativeName: '日本語'),
+    (locale: Locale('es'), nativeName: 'Español'),
+    (locale: Locale('fr'), nativeName: 'Français'),
+    (locale: Locale('zh'), nativeName: '中文（简体）'),
+    (locale: Locale('ar'), nativeName: 'العربية'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final lang in _languages)
+            ListTile(
+              title: Text(lang.nativeName),
+              trailing: currentLocale.languageCode == lang.locale.languageCode
+                  ? const Icon(Icons.check, color: Colors.blue)
+                  : null,
+              onTap: () => onSelected(lang.locale),
+            ),
+          const SizedBox(height: 8),
+        ],
       ),
     );
   }
@@ -35,15 +111,15 @@ class _CategorySection extends StatelessWidget {
   final TemplateCategory category;
   final List<InviteTemplate> templates;
 
-  String get _categoryLabel => switch (category) {
-        TemplateCategory.wedding => 'Wedding',
-        TemplateCategory.funeral => 'Funeral',
-        TemplateCategory.birthday => 'Birthday',
+  String _categoryLabel(AppLocalizations l10n) => switch (category) {
+        TemplateCategory.wedding => l10n.wedding,
+        TemplateCategory.funeral => l10n.funeral,
+        TemplateCategory.birthday => l10n.birthday,
       };
 
   IconData get _categoryIcon => switch (category) {
-        TemplateCategory.wedding => Icons.favorite,
-        TemplateCategory.funeral => Icons.local_florist,
+        TemplateCategory.wedding => Icons.diamond_outlined,
+        TemplateCategory.funeral => Icons.church,
         TemplateCategory.birthday => Icons.cake,
       };
 
@@ -55,6 +131,7 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,7 +141,7 @@ class _CategorySection extends StatelessWidget {
             children: [
               Icon(_categoryIcon, color: _categoryColor, size: 22),
               const SizedBox(width: 8),
-              Text(_categoryLabel, style: AppTextStyles.heading2),
+              Text(_categoryLabel(l10n), style: AppTextStyles.heading2),
             ],
           ),
         ),
@@ -117,7 +194,7 @@ class _TemplateCard extends StatelessWidget {
     final palette = template.colorPalette;
 
     return GestureDetector(
-      onTap: () => context.go('/editor', extra: EditorRouteExtra(templateId: template.id)),
+      onTap: () => context.push('/editor', extra: EditorRouteExtra(templateId: template.id)),
       child: Container(
         decoration: BoxDecoration(
           color: palette.background,
@@ -127,7 +204,6 @@ class _TemplateCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Top 45%: styled header band with category title font
             Expanded(
               flex: 45,
               child: Container(
@@ -151,7 +227,6 @@ class _TemplateCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Bottom 55%: background with layout lines, body sample, and name
             Expanded(
               flex: 55,
               child: Container(

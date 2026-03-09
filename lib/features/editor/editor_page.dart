@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:invite/core/di/providers.dart';
@@ -96,13 +97,16 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   @override
   Widget build(BuildContext context) {
     final editorState = ref.watch(editorProvider);
-    final bgColor =
-        editorState.template?.colorPalette.background ?? Colors.white;
+    final bgColor = editorState.canvasColor;
     final templateName = editorState.template?.name;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(templateName ?? 'Editor'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.download),
@@ -504,52 +508,153 @@ class _EditorToolbar extends ConsumerWidget {
 
   final Size canvasSize;
 
+  void _showBgColorPicker(BuildContext context, WidgetRef ref) {
+    const colors = [
+      // Whites / near-whites
+      Colors.white,
+      Color(0xFFF5F5F5),
+      Color(0xFFFFFDE7),
+      Color(0xFFFCE4EC),
+      // Pastels
+      Color(0xFFE8F5E9),
+      Color(0xFFE3F2FD),
+      Color(0xFFEDE7F6),
+      Color(0xFFFFF9C4),
+      Color(0xFFFFE0B2),
+      Color(0xFFE0F7FA),
+      Color(0xFFF3E5F5),
+      Color(0xFFE8EAF6),
+      // Bold / rich
+      Color(0xFFEF9A9A),
+      Color(0xFF90CAF9),
+      Color(0xFFA5D6A7),
+      Color(0xFFFFCC80),
+      Color(0xFFCE93D8),
+      Color(0xFF80DEEA),
+      Color(0xFF1A237E),
+      Color(0xFF880E4F),
+      Color(0xFF1B5E20),
+      Color(0xFF212121),
+    ];
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        final current = ref.read(editorProvider).canvasColor;
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            Color selected = current;
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Canvas background',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: colors.map((c) {
+                      final isSelected = selected == c;
+                      return GestureDetector(
+                        onTap: () {
+                          ref
+                              .read(editorProvider.notifier)
+                              .updateCanvasColor(c);
+                          Navigator.pop(ctx);
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: c,
+                            borderRadius: BorderRadius.circular(6),
+                            border: isSelected
+                                ? Border.all(color: Colors.blue, width: 3)
+                                : Border.all(
+                                    color: Colors.grey.shade300, width: 1),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // Task 8: emoji sticker picker bottom sheet.
   void _showStickerPicker(BuildContext context, WidgetRef ref) {
-    const stickers = [
-      '🎉', '❤️', '🌸', '⭐', '🎊', '🌺', '🦋', '🎈', '💐', '🕊️',
-      '🎂', '🎁', '🥳', '🌹', '💝', '✨', '🎀', '🌈', '🍾', '💫',
-      '🎵', '🎶', '🌻', '🍀', '🦄', '🌙', '☀️', '🔥', '💎', '🏆',
+    const groups = [
+      (label: 'Decorative', stickers: ['✨', '🌟', '⭐', '💫', '🎀', '🌈', '🦋', '🌸', '🌺', '🌻']),
+      (label: 'Wedding', stickers: ['💍', '👰', '🤵', '💒', '🥂', '🌹', '💐', '🕊️', '💝', '🎊']),
+      (label: 'Funeral', stickers: ['🕊️', '🙏', '🪻', '🕯️', '🌿', '🌾', '💙', '🌙', '✝️', '🫶']),
+      (label: 'Birthday', stickers: ['🎂', '🎉', '🎈', '🎁', '🥳', '🍰', '🎊', '🎶', '🎵', '🏆']),
     ];
     showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.55,
+        minChildSize: 0.35,
+        maxChildSize: 0.85,
+        builder: (ctx, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
             const Text(
               'Pick a sticker',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: stickers
-                  .map(
-                    (s) => GestureDetector(
-                      onTap: () {
-                        ref.read(editorProvider.notifier).addElement(
-                              StickerElement(
-                                id: DateTime.now()
-                                    .millisecondsSinceEpoch
-                                    .toString(),
-                                x: (canvasSize.width - 80) / 2,
-                                y: (canvasSize.height - 80) / 2,
-                                width: 80,
-                                height: 80,
-                                stickerAsset: s,
-                              ),
-                            );
-                        Navigator.pop(ctx);
-                      },
-                      child: Text(s, style: const TextStyle(fontSize: 36)),
-                    ),
-                  )
-                  .toList(),
-            ),
+            for (final group in groups) ...[
+              Text(
+                group.label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: group.stickers
+                    .map(
+                      (s) => GestureDetector(
+                        onTap: () {
+                          ref.read(editorProvider.notifier).addElement(
+                                StickerElement(
+                                  id: DateTime.now()
+                                      .millisecondsSinceEpoch
+                                      .toString(),
+                                  x: (canvasSize.width - 80) / 2,
+                                  y: (canvasSize.height - 80) / 2,
+                                  width: 80,
+                                  height: 80,
+                                  stickerAsset: s,
+                                ),
+                              );
+                          Navigator.pop(ctx);
+                        },
+                        child: Text(s, style: const TextStyle(fontSize: 36)),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
         ),
       ),
@@ -579,6 +684,11 @@ class _EditorToolbar extends ConsumerWidget {
             onPressed: editorState.canRedo
                 ? () => ref.read(editorProvider.notifier).redo()
                 : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.format_color_fill),
+            tooltip: 'Background color',
+            onPressed: () => _showBgColorPicker(context, ref),
           ),
           IconButton(
             icon: const Icon(Icons.text_fields),

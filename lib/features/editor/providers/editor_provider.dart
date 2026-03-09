@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:invite/features/editor/models/canvas_element.dart';
 import 'package:invite/features/templates/models/template_model.dart';
@@ -7,6 +8,7 @@ class EditorState {
     this.elements = const [],
     this.selectedElement,
     this.template,
+    this.canvasColor = Colors.white,
     this.history = const [],
     this.future = const [],
   });
@@ -14,6 +16,7 @@ class EditorState {
   final List<CanvasElement> elements;
   final CanvasElement? selectedElement;
   final InviteTemplate? template;
+  final Color canvasColor;
   final List<List<CanvasElement>> history;
   final List<List<CanvasElement>> future;
 
@@ -25,6 +28,7 @@ class EditorState {
     CanvasElement? selectedElement,
     InviteTemplate? template,
     bool clearSelection = false,
+    Color? canvasColor,
     List<List<CanvasElement>>? history,
     List<List<CanvasElement>>? future,
   }) {
@@ -33,6 +37,7 @@ class EditorState {
       selectedElement:
           clearSelection ? null : selectedElement ?? this.selectedElement,
       template: template ?? this.template,
+      canvasColor: canvasColor ?? this.canvasColor,
       history: history ?? this.history,
       future: future ?? this.future,
     );
@@ -76,7 +81,14 @@ class EditorNotifier extends StateNotifier<EditorState> {
   }
 
   void setTemplate(InviteTemplate template) {
-    state = state.copyWith(template: template);
+    state = state.copyWith(
+      template: template,
+      canvasColor: template.colorPalette.background,
+    );
+  }
+
+  void updateCanvasColor(Color color) {
+    state = state.copyWith(canvasColor: color);
   }
 
   /// Replaces canvas elements without recording a history entry.
