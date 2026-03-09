@@ -7,7 +7,7 @@ import 'package:invite/core/theme/app_colors.dart';
 import 'package:invite/core/theme/app_text_styles.dart';
 import 'package:invite/features/templates/data/template_data.dart';
 import 'package:invite/features/templates/models/template_model.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:invite/core/l10n/app_localizations.dart';
 
 class TemplatesPage extends ConsumerWidget {
   const TemplatesPage({super.key});
