@@ -45,6 +45,7 @@ class InviteTemplate {
     required this.category,
     required this.colorPalette,
     required this.elements,
+    this.isPro = false,
   });
 
   final String id;
@@ -52,4 +53,5 @@ class InviteTemplate {
   final TemplateCategory category;
   final ColorPalette colorPalette;
   final List<TemplateElement> elements;
+  final bool isPro;
 }

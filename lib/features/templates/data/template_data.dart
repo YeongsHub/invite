@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:invite/core/theme/app_colors.dart';
 import 'package:invite/features/templates/models/template_model.dart';
 
@@ -164,6 +165,7 @@ final List<InviteTemplate> defaultTemplates = [
   InviteTemplate(
     id: 'funeral_silver',
     name: 'Silver Serenity',
+    isPro: true,
     category: TemplateCategory.funeral,
     colorPalette: const ColorPalette(
       primary: AppColors.funeralSilver,
@@ -270,9 +272,62 @@ final List<InviteTemplate> defaultTemplates = [
       ),
     ],
   ),
+  // Wedding — minimalist white & gold
+  InviteTemplate(
+    id: 'wedding_minimal',
+    name: 'Minimalist White/Gold',
+    isPro: true,
+    category: TemplateCategory.wedding,
+    colorPalette: const ColorPalette(
+      primary: AppColors.weddingGold,
+      accent: AppColors.weddingText,
+      background: Color(0xFFFFFFFF),
+      text: AppColors.weddingText,
+    ),
+    elements: const [
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 80,
+        content: 'You Are Cordially Invited',
+        width: 320,
+        height: 30,
+        fontSize: 14,
+      ),
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 160,
+        content: 'Olivia & Ethan',
+        width: 320,
+        height: 70,
+        fontSize: 38,
+      ),
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 270,
+        content: 'Saturday, September 20 · 3:00 PM',
+        width: 320,
+        height: 34,
+        fontSize: 16,
+      ),
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 320,
+        content: 'The White Orchid Ballroom, Maplewood',
+        width: 320,
+        height: 30,
+        fontSize: 14,
+      ),
+    ],
+  ),
+
   InviteTemplate(
     id: 'birthday_coral',
     name: 'Coral Fiesta',
+    isPro: true,
     category: TemplateCategory.birthday,
     colorPalette: const ColorPalette(
       primary: AppColors.birthdayCoral,
@@ -315,6 +370,49 @@ final List<InviteTemplate> defaultTemplates = [
         content: 'Rooftop Lounge, Downtown',
         width: 280,
         height: 32,
+        fontSize: 14,
+      ),
+    ],
+  ),
+
+  // Birthday — modern dark neon
+  InviteTemplate(
+    id: 'birthday_neon',
+    name: 'Modern Dark Birthday',
+    isPro: true,
+    category: TemplateCategory.birthday,
+    colorPalette: const ColorPalette(
+      primary: AppColors.birthdayNeon,
+      accent: AppColors.birthdayCoral,
+      background: AppColors.birthdayDark,
+      text: Color(0xFFFFFFFF),
+    ),
+    elements: const [
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 80,
+        content: "It's Going Down!",
+        width: 320,
+        height: 44,
+        fontSize: 20,
+      ),
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 170,
+        content: 'Happy Birthday, Sam!',
+        width: 320,
+        height: 70,
+        fontSize: 36,
+      ),
+      TemplateElement(
+        type: TemplateElementType.text,
+        x: 20,
+        y: 280,
+        content: 'Friday, Nov 7 · 8 PM · Club Neon, Downtown',
+        width: 320,
+        height: 30,
         fontSize: 14,
       ),
     ],

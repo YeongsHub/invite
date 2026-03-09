@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ExportService {
   Future<String?> exportToPng(
@@ -22,5 +23,9 @@ class ExportService {
     final filePath = '${docsDir.path}/${fileName}_$timestamp.png';
     await File(filePath).writeAsBytes(byteData.buffer.asUint8List());
     return filePath;
+  }
+
+  Future<void> shareImage(String filePath) async {
+    await Share.shareXFiles([XFile(filePath)], text: 'My Invitation');
   }
 }

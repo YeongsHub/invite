@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,12 @@ import 'package:invite/core/di/providers.dart';
 import 'package:invite/features/editor/models/canvas_element.dart';
 import 'package:invite/features/editor/providers/editor_provider.dart';
 import 'package:invite/features/templates/data/template_data.dart';
+import 'package:invite/features/templates/data/text_layout_presets.dart';
 import 'package:invite/features/templates/models/template_model.dart';
+
+/// Reference canvas dimensions used by all presets and templates.
+const double _kRefWidth = 360.0;
+const double _kRefHeight = 600.0;
 
 class EditorPage extends ConsumerStatefulWidget {
   const EditorPage({super.key, this.templateId});
@@ -23,73 +29,178 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   bool _templateLoaded = false;
   final GlobalKey _canvasKey = GlobalKey();
 
+  /// Actual canvas size, captured once the LayoutBuilder has measured it.
+  Size? _canvasSize;
+
   @override
   void initState() {
     super.initState();
-    _loadTemplate();
+    // Template loading is deferred to the first build where canvasSize is known.
   }
 
-  void _loadTemplate() {
+  /// Applies responsive scaling from the 360×600 reference space to [canvasSize].
+  void _loadTemplate(Size canvasSize) {
     if (_templateLoaded || widget.templateId == null) return;
     _templateLoaded = true;
+
     final template =
         defaultTemplates.where((t) => t.id == widget.templateId).firstOrNull;
-    if (template != null) {
-      Future.microtask(() {
-        final notifier = ref.read(editorProvider.notifier);
-        notifier.setTemplate(template);
+    if (template == null) return;
 
-        final base = DateTime.now().millisecondsSinceEpoch;
-        final canvasElements = <CanvasElement>[];
-        for (var i = 0; i < template.elements.length; i++) {
-          final el = template.elements[i];
-          final id = '${base}_$i';
-          switch (el.type) {
-            case TemplateElementType.text:
-              canvasElements.add(TextElement(
-                id: id,
-                x: el.x,
-                y: el.y,
-                width: el.width,
-                height: el.height,
-                text: el.content,
-                fontSize: el.fontSize,
-                color: template.colorPalette.text,
-              ));
-            case TemplateElementType.image:
-              canvasElements.add(ImageElement(
-                id: id,
-                x: el.x,
-                y: el.y,
-                width: el.width,
-                height: el.height,
-                imagePath: el.content,
-              ));
-            case TemplateElementType.sticker:
-              canvasElements.add(StickerElement(
-                id: id,
-                x: el.x,
-                y: el.y,
-                width: el.width,
-                height: el.height,
-                stickerAsset: el.content,
-              ));
-          }
+    final scaleX = canvasSize.width / _kRefWidth;
+    final scaleY = canvasSize.height / _kRefHeight;
+    final scaleFont = min(scaleX, scaleY);
+
+    Future.microtask(() {
+      final notifier = ref.read(editorProvider.notifier);
+      notifier.setTemplate(template);
+
+      final base = DateTime.now().millisecondsSinceEpoch;
+      final canvasElements = <CanvasElement>[];
+      for (var i = 0; i < template.elements.length; i++) {
+        final el = template.elements[i];
+        final id = '${base}_$i';
+
+        final scaledX = (el.x * scaleX).clamp(0.0, canvasSize.width);
+        final scaledY = (el.y * scaleY).clamp(0.0, canvasSize.height);
+        final scaledW = (el.width * scaleX).clamp(0.0, canvasSize.width);
+        final scaledH = (el.height * scaleY).clamp(0.0, canvasSize.height);
+
+        switch (el.type) {
+          case TemplateElementType.text:
+            canvasElements.add(TextElement(
+              id: id,
+              x: scaledX,
+              y: scaledY,
+              width: scaledW,
+              height: scaledH,
+              text: el.content,
+              fontSize: el.fontSize * scaleFont,
+              color: template.colorPalette.text,
+            ));
+          case TemplateElementType.image:
+            canvasElements.add(ImageElement(
+              id: id,
+              x: scaledX,
+              y: scaledY,
+              width: scaledW,
+              height: scaledH,
+              imagePath: el.content,
+            ));
+          case TemplateElementType.sticker:
+            canvasElements.add(StickerElement(
+              id: id,
+              x: scaledX,
+              y: scaledY,
+              width: scaledW,
+              height: scaledH,
+              stickerAsset: el.content,
+            ));
         }
-        notifier.loadElements(canvasElements);
-      });
-    }
+      }
+      notifier.loadElements(canvasElements);
+    });
   }
 
   Future<void> _exportCanvas() async {
-    // Task 4: use exportServiceProvider instead of instantiating directly.
-    final path = await ref
-        .read(exportServiceProvider)
-        .exportToPng(_canvasKey, 'invite_export');
+    final isPro = ref.read(isProProvider);
+    if (!isPro) {
+      await ref.read(adServiceProvider).showInterstitialAd();
+    }
+    final exportService = ref.read(exportServiceProvider);
+    final path = await exportService.exportToPng(_canvasKey, 'invite_export');
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(path != null ? 'Saved to $path' : 'Export failed'),
+    if (path != null) {
+      await exportService.shareImage(path);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export failed')),
+      );
+    }
+  }
+
+  void _showUpgradeSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Upgrade to Pro',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ...[
+              'All templates',
+              'All layouts',
+              'No ads',
+              'High-res export',
+            ].map(
+              (feature) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle,
+                        color: Colors.green, size: 20),
+                    const SizedBox(width: 10),
+                    Text(feature, style: const TextStyle(fontSize: 15)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.purple.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Column(
+                children: [
+                  Text(
+                    '₩4,900/월',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '₩29,900/년',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () {
+                ref
+                    .read(subscriptionProvider.notifier)
+                    .upgradeToPro();
+                Navigator.pop(ctx);
+              },
+              child: const Text('Upgrade Now'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Maybe Later'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -119,6 +230,17 @@ class _EditorPageState extends ConsumerState<EditorPage> {
         builder: (context, constraints) {
           final canvasHeight = constraints.maxHeight - 56;
           final canvasSize = Size(constraints.maxWidth, canvasHeight);
+
+          // Trigger template loading once the real canvas size is known.
+          if (_canvasSize == null) {
+            _canvasSize = canvasSize;
+            // Schedule after this build frame to avoid calling setState
+            // or provider writes during build.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _loadTemplate(canvasSize);
+            });
+          }
+
           return Column(
             children: [
               Expanded(
@@ -152,7 +274,10 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                   ),
                 ),
               ),
-              _EditorToolbar(canvasSize: canvasSize),
+              _EditorToolbar(
+                canvasSize: canvasSize,
+                onShowUpgradeSheet: () => _showUpgradeSheet(context),
+              ),
             ],
           );
         },
@@ -338,6 +463,8 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
           clipBehavior: Clip.none,
           children: [
             Container(
+              width: double.infinity,
+              height: double.infinity,
               decoration: widget.isSelected
                   ? BoxDecoration(
                       border: Border.all(color: Colors.blue, width: 2),
@@ -500,13 +627,116 @@ class _ResizeHandleState extends State<_ResizeHandle> {
 }
 
 // ---------------------------------------------------------------------------
+// Text layout preset card (used in the layout picker bottom sheet)
+// ---------------------------------------------------------------------------
+
+class _TextLayoutPresetCard extends StatelessWidget {
+  const _TextLayoutPresetCard({
+    required this.preset,
+    required this.onTap,
+    this.isLocked = false,
+  });
+
+  final TextLayoutPreset preset;
+  final VoidCallback onTap;
+  final bool isLocked;
+
+  // Canvas reference dimensions matching text_layout_presets.dart
+  static const double _refWidth = 360;
+  static const double _refHeight = 600;
+  static const double _previewWidth = 120;
+  static const double _previewHeight = 80;
+  static const double _scaleX = _previewWidth / _refWidth;
+  static const double _scaleY = _previewHeight / _refHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            // Visual preview
+            Container(
+              width: _previewWidth,
+              height: _previewHeight,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Stack(
+                clipBehavior: Clip.hardEdge,
+                children: preset.items.map((item) {
+                  return Positioned(
+                    left: item.x * _scaleX,
+                    top: item.y * _scaleY,
+                    width: item.width * _scaleX,
+                    height: item.height * _scaleY,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey.shade200,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Name and description
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    preset.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    preset.description,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isLocked)
+              const Icon(Icons.lock, color: Colors.amber)
+            else
+              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Editor toolbar
 // ---------------------------------------------------------------------------
 
 class _EditorToolbar extends ConsumerWidget {
-  const _EditorToolbar({required this.canvasSize});
+  const _EditorToolbar({
+    required this.canvasSize,
+    required this.onShowUpgradeSheet,
+  });
 
   final Size canvasSize;
+  final VoidCallback onShowUpgradeSheet;
 
   void _showBgColorPicker(BuildContext context, WidgetRef ref) {
     const colors = [
@@ -588,6 +818,89 @@ class _EditorToolbar extends ConsumerWidget {
           },
         );
       },
+    );
+  }
+
+  // Text layout preset picker bottom sheet.
+  void _showLayoutPicker(BuildContext context, WidgetRef ref) {
+    final isPro = ref.read(isProProvider);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (ctx, scrollController) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Text Layouts',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                itemCount: textLayoutPresets.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (ctx, index) {
+                  final preset = textLayoutPresets[index];
+                  // Presets at index >= 3 are considered pro-only.
+                  final isProPreset = index >= 3;
+                  final isLocked = isProPreset && !isPro;
+                  return _TextLayoutPresetCard(
+                    preset: preset,
+                    isLocked: isLocked,
+                    onTap: () {
+                      if (isLocked) {
+                        Navigator.pop(ctx);
+                        onShowUpgradeSheet();
+                        return;
+                      }
+                      final scaleX = canvasSize.width / _kRefWidth;
+                      final scaleY = canvasSize.height / _kRefHeight;
+                      final scaleFont = min(scaleX, scaleY);
+
+                      final base =
+                          DateTime.now().millisecondsSinceEpoch;
+                      for (var i = 0; i < preset.items.length; i++) {
+                        final item = preset.items[i];
+                        final scaledX =
+                            (item.x * scaleX).clamp(0.0, canvasSize.width);
+                        final scaledY =
+                            (item.y * scaleY).clamp(0.0, canvasSize.height);
+                        final scaledW =
+                            (item.width * scaleX).clamp(0.0, canvasSize.width);
+                        final scaledH = (item.height * scaleY)
+                            .clamp(0.0, canvasSize.height);
+                        ref.read(editorProvider.notifier).addElement(
+                              TextElement(
+                                id: '${base}_$i',
+                                x: scaledX,
+                                y: scaledY,
+                                width: scaledW,
+                                height: scaledH,
+                                text: item.defaultText,
+                                fontSize: item.fontSize * scaleFont,
+                                color: Colors.black,
+                              ),
+                            );
+                      }
+                      Navigator.pop(ctx);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -735,6 +1048,11 @@ class _EditorToolbar extends ConsumerWidget {
             icon: const Icon(Icons.emoji_emotions),
             tooltip: 'Add Sticker',
             onPressed: () => _showStickerPicker(context, ref),
+          ),
+          IconButton(
+            icon: const Icon(Icons.view_quilt),
+            tooltip: 'Text Layouts',
+            onPressed: () => _showLayoutPicker(context, ref),
           ),
           // Task 5: delete selected element.
           if (editorState.selectedElement != null)

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:invite/core/di/locale_provider.dart';
+import 'package:invite/core/di/providers.dart';
 import 'package:invite/core/router/app_router.dart';
 import 'package:invite/core/theme/app_colors.dart';
 import 'package:invite/core/theme/app_text_styles.dart';
@@ -160,7 +162,7 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
-class _TemplateCard extends StatelessWidget {
+class _TemplateCard extends ConsumerWidget {
   const _TemplateCard({required this.template});
 
   final InviteTemplate template;
@@ -190,96 +192,170 @@ class _TemplateCard extends StatelessWidget {
       };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final palette = template.colorPalette;
+    final isPro = ref.watch(isProProvider);
+    final isLocked = template.isPro && !isPro;
 
     return GestureDetector(
-      onTap: () => context.push('/editor', extra: EditorRouteExtra(templateId: template.id)),
-      child: Container(
-        decoration: BoxDecoration(
-          color: palette.background,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              flex: 45,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: palette.primary,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                ),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  _titleSample,
-                  style: _titleStyle.copyWith(
-                    color: palette.accent,
-                    fontSize: 13,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+      onTap: () {
+        if (isLocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Upgrade to Pro to use this template'),
             ),
-            Expanded(
-              flex: 55,
-              child: Container(
-                color: palette.background,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _bodySample,
-                          style: _bodyStyle.copyWith(
-                            color: palette.text,
-                            fontSize: 9,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Divider(
-                          height: 1,
-                          thickness: 0.8,
-                          color: palette.text.withValues(alpha: 0.15),
-                        ),
-                        const SizedBox(height: 4),
-                        Divider(
-                          height: 1,
-                          thickness: 0.8,
-                          color: palette.text.withValues(alpha: 0.15),
-                        ),
-                      ],
+          );
+          return;
+        }
+        context.push('/editor', extra: EditorRouteExtra(templateId: template.id));
+      },
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: palette.background,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.black12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 45,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: palette.primary,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
+                      ),
                     ),
-                    Text(
-                      template.name,
-                      style: AppTextStyles.caption.copyWith(
-                        color: palette.text,
-                        fontWeight: FontWeight.w600,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      _titleSample,
+                      style: _titleStyle.copyWith(
+                        color: palette.accent,
+                        fontSize: 13,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ],
+                  ),
+                ),
+                Expanded(
+                  flex: 55,
+                  child: Container(
+                    color: palette.background,
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _bodySample,
+                              style: _bodyStyle.copyWith(
+                                color: palette.text,
+                                fontSize: 9,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Divider(
+                              height: 1,
+                              thickness: 0.8,
+                              color: palette.text.withValues(alpha: 0.15),
+                            ),
+                            const SizedBox(height: 4),
+                            Divider(
+                              height: 1,
+                              thickness: 0.8,
+                              color: palette.text.withValues(alpha: 0.15),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          template.name,
+                          style: AppTextStyles.caption.copyWith(
+                            color: palette.text,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (template.isPro)
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(
+                  Icons.lock,
+                  color: Color(0xFFFFD700), // golden
+                  size: 16,
                 ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Banner ad widget (shown for free users at the bottom of TemplatesPage)
+// ---------------------------------------------------------------------------
+
+class _BannerAdWidget extends ConsumerStatefulWidget {
+  const _BannerAdWidget();
+
+  @override
+  ConsumerState<_BannerAdWidget> createState() => _BannerAdWidgetState();
+}
+
+class _BannerAdWidgetState extends ConsumerState<_BannerAdWidget> {
+  late final BannerAd _bannerAd;
+  bool _adLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bannerAd = ref.read(adServiceProvider).createBannerAd()
+      ..load().then((_) {
+        if (mounted) setState(() => _adLoaded = true);
+      });
+  }
+
+  @override
+  void dispose() {
+    _bannerAd.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_adLoaded) return const SizedBox.shrink();
+    return SizedBox(
+      width: _bannerAd.size.width.toDouble(),
+      height: _bannerAd.size.height.toDouble(),
+      child: AdWidget(ad: _bannerAd),
     );
   }
 }
