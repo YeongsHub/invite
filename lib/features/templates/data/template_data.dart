@@ -11,7 +11,7 @@ final List<InviteTemplate> defaultTemplates = [
     colorPalette: const ColorPalette(
       primary: AppColors.weddingRose,
       accent: AppColors.weddingGold,
-      background: AppColors.weddingCream,
+      background: AppColors.weddingRose,
       text: AppColors.weddingText,
     ),
     elements: const [
@@ -60,7 +60,7 @@ final List<InviteTemplate> defaultTemplates = [
     colorPalette: const ColorPalette(
       primary: AppColors.weddingGold,
       accent: AppColors.weddingBlush,
-      background: AppColors.weddingCream,
+      background: AppColors.weddingGold,
       text: AppColors.weddingText,
     ),
     elements: const [

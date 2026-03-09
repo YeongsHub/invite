@@ -10,6 +10,7 @@ import 'package:invite/features/editor/models/canvas_element.dart';
 import 'package:invite/features/editor/providers/editor_provider.dart';
 import 'package:invite/features/templates/data/template_data.dart';
 import 'package:invite/features/templates/data/text_layout_presets.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:invite/features/templates/models/template_model.dart';
 
 /// Reference canvas dimensions used by all presets and templates.
@@ -738,81 +739,294 @@ class _EditorToolbar extends ConsumerWidget {
   final Size canvasSize;
   final VoidCallback onShowUpgradeSheet;
 
-  void _showBgColorPicker(BuildContext context, WidgetRef ref) {
-    const colors = [
-      // Whites / near-whites
+  // Free tier: first 8 basic colors only.
+  static const List<Color> _freeColors = [
+    Colors.white,
+    Color(0xFFF5F5F5),
+    Color(0xFFFFFDE7),
+    Color(0xFFFCE4EC),
+    Color(0xFFE8F5E9),
+    Color(0xFFE3F2FD),
+    Color(0xFFEDE7F6),
+    Color(0xFFFFF9C4),
+  ];
+
+  // Pro palette — organized by section.
+  static const Map<String, List<Color>> _proSections = {
+    'Neutrals': [
       Colors.white,
       Color(0xFFF5F5F5),
-      Color(0xFFFFFDE7),
-      Color(0xFFFCE4EC),
-      // Pastels
-      Color(0xFFE8F5E9),
-      Color(0xFFE3F2FD),
-      Color(0xFFEDE7F6),
-      Color(0xFFFFF9C4),
-      Color(0xFFFFE0B2),
-      Color(0xFFE0F7FA),
-      Color(0xFFF3E5F5),
-      Color(0xFFE8EAF6),
-      // Bold / rich
-      Color(0xFFEF9A9A),
-      Color(0xFF90CAF9),
-      Color(0xFFA5D6A7),
-      Color(0xFFFFCC80),
-      Color(0xFFCE93D8),
-      Color(0xFF80DEEA),
-      Color(0xFF1A237E),
-      Color(0xFF880E4F),
-      Color(0xFF1B5E20),
+      Color(0xFFE0E0E0),
+      Color(0xFF9E9E9E),
+      Color(0xFF616161),
+      Color(0xFF424242),
       Color(0xFF212121),
-    ];
+      Colors.black,
+    ],
+    'Pastels': [
+      Color(0xFFF8BBD0), // baby pink
+      Color(0xFFE1BEE7), // lavender
+      Color(0xFFC8E6C9), // mint
+      Color(0xFFB3E5FC), // sky blue
+      Color(0xFFFFCCBC), // peach
+      Color(0xFFFFF9C4), // lemon
+      Color(0xFFD1C4E9), // lilac
+      Color(0xFFC5E1A5), // sage
+      Color(0xFFF48FB1), // blush
+      Color(0xFFB3D4F5), // powder blue
+    ],
+    'Vivid': [
+      Color(0xFFE91E63), // rose
+      Color(0xFFFF5722), // coral
+      Color(0xFFFFC107), // gold
+      Color(0xFF4CAF50), // emerald
+      Color(0xFF3F51B5), // royal blue
+      Color(0xFF9C27B0), // purple
+      Color(0xFF009688), // teal
+      Color(0xFFFF9800), // orange
+      Color(0xFFB71C1C), // crimson
+      Color(0xFF0D47A1), // navy
+    ],
+    'Dark / Rich': [
+      Color(0xFF4A0E2A), // deep burgundy
+      Color(0xFF1B5E20), // forest green
+      Color(0xFF0D1B4B), // midnight blue
+      Color(0xFF311B92), // deep purple
+      Color(0xFF3E2723), // chocolate
+      Color(0xFF004D40), // dark teal
+      Color(0xFF880E4F), // dark rose
+      Color(0xFF37474F), // slate
+    ],
+  };
+
+  void _showBgColorPicker(BuildContext context, WidgetRef ref) {
+    final isPro = ref.read(isProProvider);
 
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (ctx) {
         final current = ref.read(editorProvider).canvasColor;
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             Color selected = current;
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Canvas background',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: colors.map((c) {
-                      final isSelected = selected == c;
-                      return GestureDetector(
-                        onTap: () {
-                          ref
-                              .read(editorProvider.notifier)
-                              .updateCanvasColor(c);
-                          Navigator.pop(ctx);
-                        },
+
+            Widget colorSwatch(Color c, {bool locked = false}) {
+              final isSelected = selected == c;
+              return GestureDetector(
+                onTap: locked
+                    ? () {
+                        Navigator.pop(ctx);
+                        onShowUpgradeSheet();
+                      }
+                    : () {
+                        ref
+                            .read(editorProvider.notifier)
+                            .updateCanvasColor(c);
+                        Navigator.pop(ctx);
+                      },
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: c,
+                        borderRadius: BorderRadius.circular(8),
+                        border: isSelected
+                            ? Border.all(color: Colors.blue, width: 3)
+                            : Border.all(
+                                color: Colors.grey.shade300, width: 1),
+                      ),
+                    ),
+                    if (locked)
+                      Positioned.fill(
                         child: Container(
-                          width: 40,
-                          height: 40,
                           decoration: BoxDecoration(
-                            color: c,
-                            borderRadius: BorderRadius.circular(6),
-                            border: isSelected
-                                ? Border.all(color: Colors.blue, width: 3)
-                                : Border.all(
-                                    color: Colors.grey.shade300, width: 1),
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.lock,
+                            size: 18,
+                            color: Colors.white,
                           ),
                         ),
+                      ),
+                  ],
+                ),
+              );
+            }
+
+            if (!isPro) {
+              // Free layout: first 8 colors + locked remaining colors.
+              const allFreeColors = [
+                Colors.white,
+                Color(0xFFF5F5F5),
+                Color(0xFFFFFDE7),
+                Color(0xFFFCE4EC),
+                Color(0xFFE8F5E9),
+                Color(0xFFE3F2FD),
+                Color(0xFFEDE7F6),
+                Color(0xFFFFF9C4),
+                // Locked previews
+                Color(0xFFFFE0B2),
+                Color(0xFFE0F7FA),
+                Color(0xFFF3E5F5),
+                Color(0xFFE8EAF6),
+                Color(0xFFEF9A9A),
+                Color(0xFF90CAF9),
+                Color(0xFFA5D6A7),
+                Color(0xFF1A237E),
+              ];
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Canvas background',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: allFreeColors.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final c = entry.value;
+                        return colorSwatch(c, locked: idx >= _freeColors.length);
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade700,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'PRO',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Upgrade to Pro for full palette',
+                            style: TextStyle(
+                                fontSize: 13, color: Colors.black54),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            onShowUpgradeSheet();
+                          },
+                          child: const Text('Upgrade'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Pro layout: sections + custom color button.
+            final sections = _proSections.entries.toList();
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.65,
+              minChildSize: 0.4,
+              maxChildSize: 0.92,
+              builder: (ctx2, scrollController) => Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    const Text(
+                      'Canvas background',
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 12),
+                    ...sections.map((section) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            section.key,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children:
+                                section.value.map((c) => colorSwatch(c)).toList(),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
                       );
-                    }).toList(),
-                  ),
-                ],
+                    }),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.color_lens_outlined),
+                      label: const Text('Custom Color'),
+                      onPressed: () async {
+                        Color pickerColor = selected;
+                        final confirmed = await showDialog<bool>(
+                          context: ctx,
+                          builder: (dialogCtx) => AlertDialog(
+                            title: const Text('Pick a color'),
+                            content: SingleChildScrollView(
+                              child: ColorPicker(
+                                pickerColor: pickerColor,
+                                onColorChanged: (c) => pickerColor = c,
+                                enableAlpha: false,
+                                labelTypes: const [],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogCtx, false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogCtx, true),
+                                child: const Text('Apply'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          ref
+                              .read(editorProvider.notifier)
+                              .updateCanvasColor(pickerColor);
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
             );
           },
