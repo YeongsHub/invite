@@ -28,5 +28,46 @@
   "funeral": "葬儀",
   "birthday": "誕生日",
   "canvas": "キャンバスエリア",
-  "savedTo": "保存先"
+  "savedTo": "保存先",
+
+  "tmpl_wedding_rose_0": "ご結婚のお祝いに",
+  "tmpl_wedding_rose_1": "エマ & ジェームズ",
+  "tmpl_wedding_rose_2": "6月14日（土）午後4:00",
+  "tmpl_wedding_rose_3": "グランドパビリオン・レイクビュー",
+
+  "tmpl_wedding_gold_0": "ご招待申し上げます",
+  "tmpl_wedding_gold_1": "ソフィア & ウィリアム",
+  "tmpl_wedding_gold_2": "8月22日（金）午後5:30",
+  "tmpl_wedding_gold_3": "ローズホールエステート・ヒルサイド",
+
+  "tmpl_funeral_navy_0": "謹んでご冥福をお祈りします",
+  "tmpl_funeral_navy_1": "ロバート・ジェームズ・ヘンダーソン",
+  "tmpl_funeral_navy_2": "1942 – 2024",
+  "tmpl_funeral_navy_3": "追悼式 · 3月14日（木）",
+  "tmpl_funeral_navy_4": "聖ミカエル礼拝堂、午後2:00",
+
+  "tmpl_funeral_silver_0": "その生涯に感謝を込めて",
+  "tmpl_funeral_silver_1": "マーガレット・アン・コリンズ",
+  "tmpl_funeral_silver_2": "1950 – 2024",
+  "tmpl_funeral_silver_3": "偲ぶ会 · 4月5日（土）",
+
+  "tmpl_birthday_confetti_0": "パーティーの時間！",
+  "tmpl_birthday_confetti_1": "アレックスの誕生日パーティーへようこそ",
+  "tmpl_birthday_confetti_2": "7歳のお誕生日おめでとう！",
+  "tmpl_birthday_confetti_3": "7月12日（土）午後3:00",
+  "tmpl_birthday_confetti_4": "サニーサイド、メープルストリート42番地",
+
+  "tmpl_wedding_minimal_0": "謹んでご招待申し上げます",
+  "tmpl_wedding_minimal_1": "オリビア & イーサン",
+  "tmpl_wedding_minimal_2": "9月20日（土）午後3:00",
+  "tmpl_wedding_minimal_3": "ホワイトオーキッドボールルーム・メープルウッド",
+
+  "tmpl_birthday_coral_0": "一緒にお祝いしましょう！",
+  "tmpl_birthday_coral_1": "ジョーダン、30歳のお誕生日！",
+  "tmpl_birthday_coral_2": "10月3日（金）午後7:00",
+  "tmpl_birthday_coral_3": "ルーフトップラウンジ・ダウンタウン",
+
+  "tmpl_birthday_neon_0": "パーティー開幕！",
+  "tmpl_birthday_neon_1": "お誕生日おめでとう、サム！",
+  "tmpl_birthday_neon_2": "11月7日（金）午後8時・クラブネオン・ダウンタウン"
 }

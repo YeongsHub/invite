@@ -28,5 +28,46 @@
   "funeral": "جنازة",
   "birthday": "عيد ميلاد",
   "canvas": "منطقة اللوحة",
-  "savedTo": "حفظ في"
+  "savedTo": "حفظ في",
+
+  "tmpl_wedding_rose_0": "نحتفل معاً بهذه المناسبة السعيدة",
+  "tmpl_wedding_rose_1": "إيما & جيمس",
+  "tmpl_wedding_rose_2": "السبت، 14 يونيو · 4:00 مساءً",
+  "tmpl_wedding_rose_3": "قاعة غراند بافيليون، إطلالة البحيرة",
+
+  "tmpl_wedding_gold_0": "يسعدنا دعوتكم",
+  "tmpl_wedding_gold_1": "صوفيا & ويليام",
+  "tmpl_wedding_gold_2": "الجمعة، 22 أغسطس · 5:30 مساءً",
+  "tmpl_wedding_gold_3": "قصر روز هول، هيلسايد",
+
+  "tmpl_funeral_navy_0": "في ذكرى عطرة",
+  "tmpl_funeral_navy_1": "روبرت جيمس هندرسون",
+  "tmpl_funeral_navy_2": "1942 – 2024",
+  "tmpl_funeral_navy_3": "مراسم العزاء · الخميس، 14 مارس",
+  "tmpl_funeral_navy_4": "كنيسة القديس ميخائيل، 2:00 مساءً",
+
+  "tmpl_funeral_silver_0": "حياة حافلة بالعطاء",
+  "tmpl_funeral_silver_1": "مارغريت آن كولينز",
+  "tmpl_funeral_silver_2": "1950 – 2024",
+  "tmpl_funeral_silver_3": "تكريم الذكرى · السبت، 5 أبريل",
+
+  "tmpl_birthday_confetti_0": "حفلة الآن!",
+  "tmpl_birthday_confetti_1": "مدعوون لحفل عيد ميلاد أليكس",
+  "tmpl_birthday_confetti_2": "الاحتفال بعيد الميلاد السابع!",
+  "tmpl_birthday_confetti_3": "السبت، 12 يوليو · 3:00 مساءً",
+  "tmpl_birthday_confetti_4": "شارع مابل 42، سانيسايد",
+
+  "tmpl_wedding_minimal_0": "نتشرف بدعوتكم",
+  "tmpl_wedding_minimal_1": "أوليفيا & إيثان",
+  "tmpl_wedding_minimal_2": "السبت، 20 سبتمبر · 3:00 مساءً",
+  "tmpl_wedding_minimal_3": "قاعة وايت أوركيد، مابلوود",
+
+  "tmpl_birthday_coral_0": "هيا نحتفل!",
+  "tmpl_birthday_coral_1": "جوردان يتم الثلاثين!",
+  "tmpl_birthday_coral_2": "الجمعة، 3 أكتوبر · 7:00 مساءً",
+  "tmpl_birthday_coral_3": "روفتوب لاونج، وسط المدينة",
+
+  "tmpl_birthday_neon_0": "الحفلة على وشك البدء!",
+  "tmpl_birthday_neon_1": "عيد ميلاد سعيد يا سام!",
+  "tmpl_birthday_neon_2": "الجمعة، 7 نوف · 8 مساءً · كلوب نيون، وسط المدينة"
 }

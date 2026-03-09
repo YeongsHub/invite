@@ -12,6 +12,8 @@ import 'package:invite/features/templates/data/template_data.dart';
 import 'package:invite/features/templates/data/text_layout_presets.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:invite/features/templates/models/template_model.dart';
+import 'package:invite/core/di/locale_provider.dart';
+import 'package:invite/core/l10n/template_content_localizations.dart';
 
 /// Reference canvas dimensions used by all presets and templates.
 const double _kRefWidth = 360.0;
@@ -52,6 +54,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     final scaleY = canvasSize.height / _kRefHeight;
     final scaleFont = min(scaleX, scaleY);
 
+    final locale = ref.read(localeProvider);
+
     Future.microtask(() {
       final notifier = ref.read(editorProvider.notifier);
       notifier.setTemplate(template);
@@ -69,13 +73,15 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
         switch (el.type) {
           case TemplateElementType.text:
+            final localized =
+                TemplateContentLocalizations.get(template.id, i, locale);
             canvasElements.add(TextElement(
               id: id,
               x: scaledX,
               y: scaledY,
               width: scaledW,
               height: scaledH,
-              text: el.content,
+              text: localized.isNotEmpty ? localized : el.content,
               fontSize: el.fontSize * scaleFont,
               color: template.colorPalette.text,
             ));
