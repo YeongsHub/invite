@@ -239,6 +239,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Saved to'**
   String get savedTo;
+
+  /// No description provided for @tmpl_wedding_rose_0.
+  ///
+  /// In en, this message translates to:
+  /// **'Together We Celebrate'**
+  String get tmpl_wedding_rose_0;
+
+  /// No description provided for @tmpl_wedding_rose_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Emma & James'**
+  String get tmpl_wedding_rose_1;
+
+  /// No description provided for @tmpl_wedding_rose_2.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday, June 14 · 4:00 PM'**
+  String get tmpl_wedding_rose_2;
+
+  /// No description provided for @tmpl_wedding_rose_3.
+  ///
+  /// In en, this message translates to:
+  /// **'The Grand Pavilion, Lake View'**
+  String get tmpl_wedding_rose_3;
+
+  /// No description provided for @tmpl_wedding_gold_0.
+  ///
+  /// In en, this message translates to:
+  /// **'You Are Invited'**
+  String get tmpl_wedding_gold_0;
+
+  /// No description provided for @tmpl_wedding_gold_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Sophia & William'**
+  String get tmpl_wedding_gold_1;
+
+  /// No description provided for @tmpl_wedding_gold_2.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday, August 22 · 5:30 PM'**
+  String get tmpl_wedding_gold_2;
+
+  /// No description provided for @tmpl_wedding_gold_3.
+  ///
+  /// In en, this message translates to:
+  /// **'Rose Hall Estate, Hillside'**
+  String get tmpl_wedding_gold_3;
+
+  /// No description provided for @tmpl_funeral_navy_0.
+  ///
+  /// In en, this message translates to:
+  /// **'In Loving Memory'**
+  String get tmpl_funeral_navy_0;
+
+  /// No description provided for @tmpl_funeral_navy_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Robert James Henderson'**
+  String get tmpl_funeral_navy_1;
+
+  /// No description provided for @tmpl_funeral_navy_2.
+  ///
+  /// In en, this message translates to:
+  /// **'1942 – 2024'**
+  String get tmpl_funeral_navy_2;
+
+  /// No description provided for @tmpl_funeral_navy_3.
+  ///
+  /// In en, this message translates to:
+  /// **'Memorial Service · Thursday, March 14'**
+  String get tmpl_funeral_navy_3;
+
+  /// No description provided for @tmpl_funeral_navy_4.
+  ///
+  /// In en, this message translates to:
+  /// **'St. Michael\'s Chapel, 2:00 PM'**
+  String get tmpl_funeral_navy_4;
+
+  /// No description provided for @tmpl_funeral_silver_0.
+  ///
+  /// In en, this message translates to:
+  /// **'A Life Well Lived'**
+  String get tmpl_funeral_silver_0;
+
+  /// No description provided for @tmpl_funeral_silver_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Margaret Anne Collins'**
+  String get tmpl_funeral_silver_1;
+
+  /// No description provided for @tmpl_funeral_silver_2.
+  ///
+  /// In en, this message translates to:
+  /// **'1950 – 2024'**
+  String get tmpl_funeral_silver_2;
+
+  /// No description provided for @tmpl_funeral_silver_3.
+  ///
+  /// In en, this message translates to:
+  /// **'Celebration of Life · Saturday, April 5'**
+  String get tmpl_funeral_silver_3;
+
+  /// No description provided for @tmpl_birthday_confetti_0.
+  ///
+  /// In en, this message translates to:
+  /// **'Party Time!'**
+  String get tmpl_birthday_confetti_0;
+
+  /// No description provided for @tmpl_birthday_confetti_1.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re Invited to Alex\'s'**
+  String get tmpl_birthday_confetti_1;
+
+  /// No description provided for @tmpl_birthday_confetti_2.
+  ///
+  /// In en, this message translates to:
+  /// **'7th Birthday Bash!'**
+  String get tmpl_birthday_confetti_2;
+
+  /// No description provided for @tmpl_birthday_confetti_3.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday, July 12 · 3:00 PM'**
+  String get tmpl_birthday_confetti_3;
+
+  /// No description provided for @tmpl_birthday_confetti_4.
+  ///
+  /// In en, this message translates to:
+  /// **'42 Maple Street, Sunnyside'**
+  String get tmpl_birthday_confetti_4;
+
+  /// No description provided for @tmpl_wedding_minimal_0.
+  ///
+  /// In en, this message translates to:
+  /// **'You Are Cordially Invited'**
+  String get tmpl_wedding_minimal_0;
+
+  /// No description provided for @tmpl_wedding_minimal_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Olivia & Ethan'**
+  String get tmpl_wedding_minimal_1;
+
+  /// No description provided for @tmpl_wedding_minimal_2.
+  ///
+  /// In en, this message translates to:
+  /// **'Saturday, September 20 · 3:00 PM'**
+  String get tmpl_wedding_minimal_2;
+
+  /// No description provided for @tmpl_wedding_minimal_3.
+  ///
+  /// In en, this message translates to:
+  /// **'The White Orchid Ballroom, Maplewood'**
+  String get tmpl_wedding_minimal_3;
+
+  /// No description provided for @tmpl_birthday_coral_0.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s Celebrate!'**
+  String get tmpl_birthday_coral_0;
+
+  /// No description provided for @tmpl_birthday_coral_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Jordan turns 30!'**
+  String get tmpl_birthday_coral_1;
+
+  /// No description provided for @tmpl_birthday_coral_2.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday, October 3 · 7:00 PM'**
+  String get tmpl_birthday_coral_2;
+
+  /// No description provided for @tmpl_birthday_coral_3.
+  ///
+  /// In en, this message translates to:
+  /// **'Rooftop Lounge, Downtown'**
+  String get tmpl_birthday_coral_3;
+
+  /// No description provided for @tmpl_birthday_neon_0.
+  ///
+  /// In en, this message translates to:
+  /// **'It\'s Going Down!'**
+  String get tmpl_birthday_neon_0;
+
+  /// No description provided for @tmpl_birthday_neon_1.
+  ///
+  /// In en, this message translates to:
+  /// **'Happy Birthday, Sam!'**
+  String get tmpl_birthday_neon_1;
+
+  /// No description provided for @tmpl_birthday_neon_2.
+  ///
+  /// In en, this message translates to:
+  /// **'Friday, Nov 7 · 8 PM · Club Neon, Downtown'**
+  String get tmpl_birthday_neon_2;
 }
 
 class _AppLocalizationsDelegate

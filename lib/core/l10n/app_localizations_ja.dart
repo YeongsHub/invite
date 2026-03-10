@@ -75,4 +75,103 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get savedTo => '保存先';
+
+  @override
+  String get tmpl_wedding_rose_0 => 'ご結婚のお祝いに';
+
+  @override
+  String get tmpl_wedding_rose_1 => 'エマ & ジェームズ';
+
+  @override
+  String get tmpl_wedding_rose_2 => '6月14日（土）午後4:00';
+
+  @override
+  String get tmpl_wedding_rose_3 => 'グランドパビリオン・レイクビュー';
+
+  @override
+  String get tmpl_wedding_gold_0 => 'ご招待申し上げます';
+
+  @override
+  String get tmpl_wedding_gold_1 => 'ソフィア & ウィリアム';
+
+  @override
+  String get tmpl_wedding_gold_2 => '8月22日（金）午後5:30';
+
+  @override
+  String get tmpl_wedding_gold_3 => 'ローズホールエステート・ヒルサイド';
+
+  @override
+  String get tmpl_funeral_navy_0 => '謹んでご冥福をお祈りします';
+
+  @override
+  String get tmpl_funeral_navy_1 => 'ロバート・ジェームズ・ヘンダーソン';
+
+  @override
+  String get tmpl_funeral_navy_2 => '1942 – 2024';
+
+  @override
+  String get tmpl_funeral_navy_3 => '追悼式 · 3月14日（木）';
+
+  @override
+  String get tmpl_funeral_navy_4 => '聖ミカエル礼拝堂、午後2:00';
+
+  @override
+  String get tmpl_funeral_silver_0 => 'その生涯に感謝を込めて';
+
+  @override
+  String get tmpl_funeral_silver_1 => 'マーガレット・アン・コリンズ';
+
+  @override
+  String get tmpl_funeral_silver_2 => '1950 – 2024';
+
+  @override
+  String get tmpl_funeral_silver_3 => '偲ぶ会 · 4月5日（土）';
+
+  @override
+  String get tmpl_birthday_confetti_0 => 'パーティーの時間！';
+
+  @override
+  String get tmpl_birthday_confetti_1 => 'アレックスの誕生日パーティーへようこそ';
+
+  @override
+  String get tmpl_birthday_confetti_2 => '7歳のお誕生日おめでとう！';
+
+  @override
+  String get tmpl_birthday_confetti_3 => '7月12日（土）午後3:00';
+
+  @override
+  String get tmpl_birthday_confetti_4 => 'サニーサイド、メープルストリート42番地';
+
+  @override
+  String get tmpl_wedding_minimal_0 => '謹んでご招待申し上げます';
+
+  @override
+  String get tmpl_wedding_minimal_1 => 'オリビア & イーサン';
+
+  @override
+  String get tmpl_wedding_minimal_2 => '9月20日（土）午後3:00';
+
+  @override
+  String get tmpl_wedding_minimal_3 => 'ホワイトオーキッドボールルーム・メープルウッド';
+
+  @override
+  String get tmpl_birthday_coral_0 => '一緒にお祝いしましょう！';
+
+  @override
+  String get tmpl_birthday_coral_1 => 'ジョーダン、30歳のお誕生日！';
+
+  @override
+  String get tmpl_birthday_coral_2 => '10月3日（金）午後7:00';
+
+  @override
+  String get tmpl_birthday_coral_3 => 'ルーフトップラウンジ・ダウンタウン';
+
+  @override
+  String get tmpl_birthday_neon_0 => 'パーティー開幕！';
+
+  @override
+  String get tmpl_birthday_neon_1 => 'お誕生日おめでとう、サム！';
+
+  @override
+  String get tmpl_birthday_neon_2 => '11月7日（金）午後8時・クラブネオン・ダウンタウン';
 }

@@ -118,3 +118,35 @@ class StickerElement extends CanvasElement {
     );
   }
 }
+
+class QrElement extends CanvasElement {
+  const QrElement({
+    required super.id,
+    required super.x,
+    required super.y,
+    required super.width,
+    required super.height,
+    required this.data,
+  });
+
+  final String data;
+
+  @override
+  QrElement copyWith({
+    String? id,
+    double? x,
+    double? y,
+    double? width,
+    double? height,
+    String? data,
+  }) {
+    return QrElement(
+      id: id ?? this.id,
+      x: x ?? this.x,
+      y: y ?? this.y,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      data: data ?? this.data,
+    );
+  }
+}

@@ -14,6 +14,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:invite/features/templates/models/template_model.dart';
 import 'package:invite/core/di/locale_provider.dart';
 import 'package:invite/core/l10n/template_content_localizations.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 /// Reference canvas dimensions used by all presets and templates.
 const double _kRefWidth = 360.0;
@@ -34,6 +35,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
 
   /// Actual canvas size, captured once the LayoutBuilder has measured it.
   Size? _canvasSize;
+
+  /// Tracks the most recently created RSVP event for "View Responses" button.
+  String? _currentEventId;
 
   @override
   void initState() {
@@ -226,6 +230,12 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          if (_currentEventId != null)
+            IconButton(
+              icon: const Icon(Icons.list_alt),
+              tooltip: 'View RSVP Responses',
+              onPressed: () => context.push('/rsvp-list/$_currentEventId'),
+            ),
           IconButton(
             icon: const Icon(Icons.download),
             tooltip: 'Export PNG',
@@ -284,6 +294,9 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               _EditorToolbar(
                 canvasSize: canvasSize,
                 onShowUpgradeSheet: () => _showUpgradeSheet(context),
+                onEventCreated: (eventId) {
+                  setState(() => _currentEventId = eventId);
+                },
               ),
             ],
           );
@@ -585,6 +598,10 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
             style: TextStyle(fontSize: widget.element.height * 0.6),
           ),
         ),
+      QrElement(:final data) => QrImageView(
+          data: data,
+          version: QrVersions.auto,
+        ),
       _ => const SizedBox.shrink(),
     };
   }
@@ -740,10 +757,12 @@ class _EditorToolbar extends ConsumerWidget {
   const _EditorToolbar({
     required this.canvasSize,
     required this.onShowUpgradeSheet,
+    required this.onEventCreated,
   });
 
   final Size canvasSize;
   final VoidCallback onShowUpgradeSheet;
+  final void Function(String eventId) onEventCreated;
 
   // Free tier: first 8 basic colors only.
   static const List<Color> _freeColors = [
@@ -1124,6 +1143,120 @@ class _EditorToolbar extends ConsumerWidget {
     );
   }
 
+  // RSVP QR code dialog + bottom sheet.
+  Future<void> _showQrDialog(BuildContext context, WidgetRef ref) async {
+    final titleController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Create RSVP Event'),
+        content: TextField(
+          controller: titleController,
+          decoration: const InputDecoration(hintText: 'Event Title'),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+
+    titleController.dispose();
+    if (confirmed != true || !context.mounted) return;
+
+    final title = titleController.text.trim().isEmpty
+        ? 'My Event'
+        : titleController.text.trim();
+
+    final event =
+        await ref.read(rsvpProvider.notifier).createEvent(title);
+    final qrData = 'invite://rsvp/${event.id}';
+    onEventCreated(event.id);
+
+    if (!context.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          MediaQuery.of(ctx).viewInsets.bottom + 32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              event.title,
+              style: const TextStyle(
+                  fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 200,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Share this QR for guests to RSVP',
+              style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.list_alt),
+                    label: const Text('View Responses'),
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ctx.push('/rsvp-list/${event.id}');
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add to Canvas'),
+                    onPressed: () {
+                      ref.read(editorProvider.notifier).addElement(
+                            QrElement(
+                              id: event.id,
+                              x: (canvasSize.width - 150) / 2,
+                              y: (canvasSize.height - 150) / 2,
+                              width: 150,
+                              height: 150,
+                              data: qrData,
+                            ),
+                          );
+                      Navigator.pop(ctx);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Task 8: emoji sticker picker bottom sheet.
   void _showStickerPicker(BuildContext context, WidgetRef ref) {
     const groups = [
@@ -1201,7 +1334,9 @@ class _EditorToolbar extends ConsumerWidget {
     return Container(
       height: 56,
       color: Colors.white,
-      child: Row(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           IconButton(
@@ -1243,13 +1378,39 @@ class _EditorToolbar extends ConsumerWidget {
                   );
             },
           ),
-          // Task 7: wire image_picker.
+          // Image picker — Pro only
           IconButton(
             icon: const Icon(Icons.image),
-            tooltip: 'Add Image',
+            tooltip: 'Add Image (Pro)',
             onPressed: () async {
-              final picked = await ImagePicker()
-                  .pickImage(source: ImageSource.gallery);
+              final isPro = ref.read(isProProvider);
+              if (!isPro) {
+                onShowUpgradeSheet();
+                return;
+              }
+              // Show bottom sheet: gallery or camera
+              final source = await showModalBottomSheet<ImageSource>(
+                context: context,
+                builder: (ctx) => SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.photo_library),
+                        title: const Text('Choose from Gallery'),
+                        onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.camera_alt),
+                        title: const Text('Take a Photo'),
+                        onTap: () => Navigator.pop(ctx, ImageSource.camera),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+              if (source == null) return;
+              final picked = await ImagePicker().pickImage(source: source);
               if (picked == null) return;
               ref.read(editorProvider.notifier).addElement(
                     ImageElement(
@@ -1274,6 +1435,11 @@ class _EditorToolbar extends ConsumerWidget {
             tooltip: 'Text Layouts',
             onPressed: () => _showLayoutPicker(context, ref),
           ),
+          IconButton(
+            icon: const Icon(Icons.qr_code),
+            tooltip: 'RSVP QR Code',
+            onPressed: () => _showQrDialog(context, ref),
+          ),
           // Task 5: delete selected element.
           if (editorState.selectedElement != null)
             IconButton(
@@ -1284,6 +1450,7 @@ class _EditorToolbar extends ConsumerWidget {
                   .removeElement(editorState.selectedElement!.id),
             ),
         ],
+      ),
       ),
     );
   }

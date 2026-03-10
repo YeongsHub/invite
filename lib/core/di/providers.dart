@@ -5,6 +5,7 @@ import 'package:invite/features/export/export_service.dart';
 import 'ad_service.dart';
 
 export 'subscription_provider.dart';
+export 'rsvp_provider.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) => buildAppRouter());
 
