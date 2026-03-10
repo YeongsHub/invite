@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:invite/core/di/providers.dart';
+import 'package:invite/core/theme/app_colors.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:invite/features/editor/models/canvas_element.dart';
 import 'package:invite/features/editor/providers/editor_provider.dart';
 import 'package:invite/features/templates/data/template_data.dart';
@@ -131,87 +133,402 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   }
 
   void _showUpgradeSheet(BuildContext context) {
+    final purchaseService = ref.read(purchaseServiceProvider);
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          24,
-          24,
-          MediaQuery.of(ctx).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Upgrade to Pro',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ...[
-              'All templates',
-              'All layouts',
-              'No ads',
-              'High-res export',
-            ].map(
-              (feature) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.check_circle,
-                        color: Colors.green, size: 20),
-                    const SizedBox(width: 10),
-                    Text(feature, style: const TextStyle(fontSize: 15)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.purple.shade50,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Column(
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scrollController) {
+          return StatefulBuilder(
+            builder: (ctx, setSheetState) {
+              bool isLoading = false;
+
+              // Resolve live product prices when available, fall back to
+              // hard-coded display prices.
+              final products = purchaseService.products;
+              ProductDetails? monthly;
+              ProductDetails? yearly;
+              for (final p in products) {
+                if (p.id == kProMonthlyId) monthly = p;
+                if (p.id == kProYearlyId) yearly = p;
+              }
+              final monthlyPrice = monthly?.price ?? '₩4,900';
+              final yearlyPrice = yearly?.price ?? '₩29,900';
+
+              Future<void> handlePurchase(
+                  Future<bool> Function() buyFn) async {
+                setSheetState(() => isLoading = true);
+                try {
+                  final success = await buyFn();
+                  if (success && ctx.mounted) {
+                    Navigator.pop(ctx);
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('Purchase failed: $e')),
+                    );
+                  }
+                } finally {
+                  if (ctx.mounted) {
+                    setSheetState(() => isLoading = false);
+                  }
+                }
+              }
+
+              Future<void> handleRestore() async {
+                setSheetState(() => isLoading = true);
+                try {
+                  await purchaseService.restorePurchases();
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      const SnackBar(content: Text('Purchases restored')),
+                    );
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('Restore failed: $e')),
+                    );
+                  }
+                } finally {
+                  if (ctx.mounted) {
+                    setSheetState(() => isLoading = false);
+                  }
+                }
+              }
+
+              return Stack(
                 children: [
-                  Text(
-                    '₩4,900/월',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(24)),
+                    ),
+                    child: ListView(
+                      controller: scrollController,
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        0,
+                        24,
+                        MediaQuery.of(ctx).viewInsets.bottom + 24,
+                      ),
+                      children: [
+                        // Drag handle
+                        Center(
+                          child: Container(
+                            margin:
+                                const EdgeInsets.only(top: 12, bottom: 20),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+
+                        // Header — gradient star icon + bold title
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ShaderMask(
+                              shaderCallback: (bounds) =>
+                                  const LinearGradient(
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.secondary
+                                ],
+                              ).createShader(bounds),
+                              child: const Icon(
+                                Icons.auto_awesome,
+                                size: 28,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Upgrade to Pro',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Feature list with green circle-check icons
+                        ...[
+                          'All templates',
+                          'All text layouts',
+                          'Photo & camera',
+                          'Full color palette',
+                          'No ads',
+                          'High-res export',
+                        ].map(
+                          (feature) => Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 5),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 22,
+                                  height: 22,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFE8F5E9),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Color(0xFF2E7D32),
+                                    size: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  feature,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    color: AppColors.onSurface,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Product cards row
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Monthly card — grey border
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    const Text(
+                                      'Monthly',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      monthlyPrice,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.onSurface,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const Text(
+                                      '/month',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    OutlinedButton(
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => handlePurchase(
+                                              purchaseService.buyMonthly),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        side: const BorderSide(
+                                            color: AppColors.primary),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Buy',
+                                        style: TextStyle(
+                                            color: AppColors.primary),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Yearly card — primary border, tinted background
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: AppColors.primary,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: const Color(0xFFF3F0FF),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Label + SAVE badge
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          'Yearly',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2E7D32),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          child: const Text(
+                                            'SAVE 49%',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      yearlyPrice,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const Text(
+                                      '/year',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.primary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    FilledButton(
+                                      onPressed: isLoading
+                                          ? null
+                                          : () => handlePurchase(
+                                              purchaseService.buyYearly),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.primary,
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 10),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      child: const Text('Buy'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Restore Purchases
+                        Center(
+                          child: TextButton(
+                            onPressed:
+                                isLoading ? null : handleRestore,
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade600,
+                            ),
+                            child: const Text(
+                              'Restore Purchases',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ),
+
+                        // Maybe Later
+                        Center(
+                          child: TextButton(
+                            onPressed: isLoading
+                                ? null
+                                : () => Navigator.pop(ctx),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.grey.shade400,
+                            ),
+                            child: const Text(
+                              'Maybe Later',
+                              style: TextStyle(fontSize: 13),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    '₩29,900/년',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
+
+                  // Full-sheet loading overlay
+                  if (isLoading)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.black26,
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(24)),
+                        ),
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () {
-                ref
-                    .read(subscriptionProvider.notifier)
-                    .upgradeToPro();
-                Navigator.pop(ctx);
-              },
-              child: const Text('Upgrade Now'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Maybe Later'),
-            ),
-          ],
-        ),
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -1170,12 +1487,11 @@ class _EditorToolbar extends ConsumerWidget {
       ),
     );
 
-    titleController.dispose();
-    if (confirmed != true || !context.mounted) return;
-
     final title = titleController.text.trim().isEmpty
         ? 'My Event'
         : titleController.text.trim();
+    titleController.dispose();
+    if (confirmed != true || !context.mounted) return;
 
     final event =
         await ref.read(rsvpProvider.notifier).createEvent(title);
@@ -1225,7 +1541,7 @@ class _EditorToolbar extends ConsumerWidget {
                     label: const Text('View Responses'),
                     onPressed: () {
                       Navigator.pop(ctx);
-                      ctx.push('/rsvp-list/${event.id}');
+                      context.push('/rsvp-list/${event.id}');
                     },
                   ),
                 ),
