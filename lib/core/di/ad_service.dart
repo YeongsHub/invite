@@ -1,12 +1,7 @@
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:invite/core/di/ad_config.dart';
 
 class AdService {
-  // Test ad unit IDs
-  static const String _interstitialAdUnitId =
-      'ca-app-pub-3940256099942544/1033173712'; // Android test interstitial
-  static const String _bannerAdUnitId =
-      'ca-app-pub-3940256099942544/6300978111'; // Android test banner
-
   InterstitialAd? _interstitialAd;
   bool _isInterstitialReady = false;
 
@@ -17,7 +12,7 @@ class AdService {
 
   void _loadInterstitialAd() {
     InterstitialAd.load(
-      adUnitId: _interstitialAdUnitId,
+      adUnitId: AdConfig.interstitialId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -37,7 +32,7 @@ class AdService {
         onAdDismissedFullScreenContent: (ad) {
           ad.dispose();
           _isInterstitialReady = false;
-          _loadInterstitialAd(); // preload next
+          _loadInterstitialAd();
         },
         onAdFailedToShowFullScreenContent: (ad, error) {
           ad.dispose();
@@ -51,7 +46,7 @@ class AdService {
 
   BannerAd createBannerAd() {
     return BannerAd(
-      adUnitId: _bannerAdUnitId,
+      adUnitId: AdConfig.bannerId,
       size: AdSize.banner,
       request: const AdRequest(),
       listener: const BannerAdListener(),

@@ -4,6 +4,10 @@ import 'package:invite/features/templates/templates_page.dart';
 import 'package:invite/features/editor/editor_page.dart';
 import 'package:invite/features/rsvp/rsvp_response_page.dart';
 import 'package:invite/features/rsvp/rsvp_list_page.dart';
+import 'package:invite/features/settings/settings_page.dart';
+import 'package:invite/features/settings/faq_page.dart';
+import 'package:invite/features/settings/privacy_policy_page.dart';
+import 'package:invite/features/settings/terms_of_service_page.dart';
 
 class EditorRouteExtra {
   const EditorRouteExtra({this.templateId});
@@ -40,6 +44,22 @@ GoRouter buildAppRouter() => GoRouter(
             final eventId = state.pathParameters['eventId']!;
             return RsvpListPage(eventId: eventId);
           },
+        ),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsPage(),
+        ),
+        GoRoute(
+          path: '/faq',
+          builder: (context, state) => const FaqPage(),
+        ),
+        GoRoute(
+          path: '/privacy-policy',
+          builder: (context, state) => const PrivacyPolicyPage(),
+        ),
+        GoRoute(
+          path: '/terms-of-service',
+          builder: (context, state) => const TermsOfServicePage(),
         ),
       ],
     );

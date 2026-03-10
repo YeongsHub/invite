@@ -24,11 +24,12 @@ class RsvpNotifier extends AsyncNotifier<RsvpState> {
     return RsvpState(events: events, responses: responses);
   }
 
-  Future<RsvpEvent> createEvent(String title) async {
+  Future<RsvpEvent> createEvent(String title, {DateTime? deadline}) async {
     final event = RsvpEvent(
       id: const Uuid().v4(),
       title: title,
       createdAt: DateTime.now(),
+      deadline: deadline,
     );
     final current = state.valueOrNull ?? const RsvpState();
     final updated = current.copyWith(events: [...current.events, event]);

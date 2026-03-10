@@ -110,7 +110,7 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
-  // Test 6 — Toolbar has image, sticker, and layout icons
+  // Test 6 — Toolbar has image and sticker icons
   // -------------------------------------------------------------------------
   testWidgets('Toolbar contains image, sticker, and layout icons',
       (tester) async {
@@ -119,7 +119,6 @@ void main() {
 
     expect(find.byIcon(Icons.image), findsOneWidget);
     expect(find.byIcon(Icons.emoji_emotions), findsOneWidget);
-    expect(find.byIcon(Icons.view_quilt), findsOneWidget);
   });
 
   // -------------------------------------------------------------------------

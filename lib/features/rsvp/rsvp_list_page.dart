@@ -54,6 +54,9 @@ class _RsvpListPageState extends ConsumerState<RsvpListPage> {
           final attending = responses.where((r) => r.attending).length;
           final declining = responses.where((r) => !r.attending).length;
           final total = responses.length;
+          final totalGuests = responses
+              .where((r) => r.attending)
+              .fold<int>(0, (sum, r) => sum + r.guestCount);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -87,6 +90,15 @@ class _RsvpListPageState extends ConsumerState<RsvpListPage> {
                         count: total,
                         color: AppColors.primary,
                         icon: Icons.people_outline,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _SummaryCard(
+                        label: 'Guests',
+                        count: totalGuests,
+                        color: const Color(0xFF1565C0),
+                        icon: Icons.groups_outlined,
                       ),
                     ),
                   ],
@@ -257,6 +269,28 @@ class _ResponseCard extends StatelessWidget {
                         Icon(statusIcon, size: 18, color: statusColor),
                       ],
                     ),
+
+                    // Guest count (attending only)
+                    if (response.attending && response.guestCount > 1) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.group,
+                              size: 14,
+                              color: AppColors.onSurface
+                                  .withValues(alpha: 0.45)),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${response.guestCount} people',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.onSurface
+                                  .withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
 
                     // Optional message
                     if (response.message.isNotEmpty) ...[

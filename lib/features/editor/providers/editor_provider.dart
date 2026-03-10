@@ -9,6 +9,7 @@ class EditorState {
     this.selectedElement,
     this.template,
     this.canvasColor = Colors.white,
+    this.canvasPattern,
     this.history = const [],
     this.future = const [],
   });
@@ -17,6 +18,7 @@ class EditorState {
   final CanvasElement? selectedElement;
   final InviteTemplate? template;
   final Color canvasColor;
+  final String? canvasPattern; // null = solid color, otherwise pattern id
   final List<List<CanvasElement>> history;
   final List<List<CanvasElement>> future;
 
@@ -29,6 +31,7 @@ class EditorState {
     InviteTemplate? template,
     bool clearSelection = false,
     Color? canvasColor,
+    Object? canvasPattern = _stateSentinel,
     List<List<CanvasElement>>? history,
     List<List<CanvasElement>>? future,
   }) {
@@ -38,11 +41,16 @@ class EditorState {
           clearSelection ? null : selectedElement ?? this.selectedElement,
       template: template ?? this.template,
       canvasColor: canvasColor ?? this.canvasColor,
+      canvasPattern: canvasPattern == _stateSentinel
+          ? this.canvasPattern
+          : canvasPattern as String?,
       history: history ?? this.history,
       future: future ?? this.future,
     );
   }
 }
+
+const _stateSentinel = Object();
 
 class EditorNotifier extends StateNotifier<EditorState> {
   EditorNotifier() : super(const EditorState());
@@ -88,7 +96,11 @@ class EditorNotifier extends StateNotifier<EditorState> {
   }
 
   void updateCanvasColor(Color color) {
-    state = state.copyWith(canvasColor: color);
+    state = state.copyWith(canvasColor: color, canvasPattern: null);
+  }
+
+  void updateCanvasPattern(String? patternId) {
+    state = state.copyWith(canvasPattern: patternId);
   }
 
   /// Replaces canvas elements without recording a history entry.

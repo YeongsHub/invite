@@ -11,12 +11,15 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:invite/features/editor/models/canvas_element.dart';
 import 'package:invite/features/editor/providers/editor_provider.dart';
 import 'package:invite/features/templates/data/template_data.dart';
-import 'package:invite/features/templates/data/text_layout_presets.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:invite/features/templates/models/template_model.dart';
 import 'package:invite/core/di/locale_provider.dart';
 import 'package:invite/core/l10n/template_content_localizations.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:invite/features/editor/models/canvas_pattern.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Reference canvas dimensions used by all presets and templates.
 const double _kRefWidth = 360.0;
@@ -125,10 +128,25 @@ class _EditorPageState extends ConsumerState<EditorPage> {
     if (!mounted) return;
     if (path != null) {
       await exportService.shareImage(path);
+      await _maybeRequestReview();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Export failed')),
       );
+    }
+  }
+
+  Future<void> _maybeRequestReview() async {
+    const exportCountKey = 'export_count';
+    final prefs = await SharedPreferences.getInstance();
+    final count = (prefs.getInt(exportCountKey) ?? 0) + 1;
+    await prefs.setInt(exportCountKey, count);
+    // 3번째 export마다 리뷰 요청 (3, 6, 9, ...)
+    if (count % 3 == 0) {
+      final inAppReview = InAppReview.instance;
+      if (await inAppReview.isAvailable()) {
+        await inAppReview.requestReview();
+      }
     }
   }
 
@@ -158,8 +176,8 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                 if (p.id == kProMonthlyId) monthly = p;
                 if (p.id == kProYearlyId) yearly = p;
               }
-              final monthlyPrice = monthly?.price ?? '₩4,900';
-              final yearlyPrice = yearly?.price ?? '₩29,900';
+              final monthlyPrice = monthly?.price ?? r'$4.99';
+              final yearlyPrice = yearly?.price ?? r'$19.99';
 
               Future<void> handlePurchase(
                   Future<bool> Function() buyFn) async {
@@ -537,6 +555,7 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   Widget build(BuildContext context) {
     final editorState = ref.watch(editorProvider);
     final bgColor = editorState.canvasColor;
+    final bgPattern = editorState.canvasPattern;
     final templateName = editorState.template?.name;
 
     return Scaffold(
@@ -557,6 +576,11 @@ class _EditorPageState extends ConsumerState<EditorPage> {
             icon: const Icon(Icons.download),
             tooltip: 'Export PNG',
             onPressed: _exportCanvas,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => context.push('/settings'),
           ),
         ],
       ),
@@ -586,17 +610,28 @@ class _EditorPageState extends ConsumerState<EditorPage> {
                     key: _canvasKey,
                     child: Stack(
                       children: [
-                        Container(
-                          color: bgColor,
-                          child: editorState.elements.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    'Canvas Area',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                )
-                              : const SizedBox.expand(),
-                        ),
+                        // Background: pattern or solid color
+                        if (bgPattern != null)
+                          CustomPaint(
+                            painter: getPatternPainter(bgPattern),
+                            child: SizedBox.expand(
+                              child: editorState.elements.isEmpty
+                                  ? const Center(
+                                      child: Text('Canvas Area',
+                                          style: TextStyle(color: Colors.grey)))
+                                  : null,
+                            ),
+                          )
+                        else
+                          Container(
+                            color: bgColor,
+                            child: editorState.elements.isEmpty
+                                ? const Center(
+                                    child: Text('Canvas Area',
+                                        style: TextStyle(color: Colors.grey)),
+                                  )
+                                : const SizedBox.expand(),
+                          ),
                         for (final element in editorState.elements)
                           _CanvasElementWidget(
                             element: element,
@@ -669,21 +704,55 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
     }
   }
 
+  // Free fonts available to all users.
+  static const List<(String label, String? family)> _freeFonts = [
+    ('Default', null),
+    ('Serif', 'Playfair Display'),
+    ('Mono', 'Roboto Mono'),
+  ];
+
+  // Premium fonts (Pro only).
+  static const List<(String label, String? family)> _proFonts = [
+    ('Dancing Script', 'Dancing Script'),
+    ('Pacifico', 'Pacifico'),
+    ('Lobster', 'Lobster'),
+    ('Montserrat', 'Montserrat'),
+    ('Oswald', 'Oswald'),
+    ('Great Vibes', 'Great Vibes'),
+    ('Raleway', 'Raleway'),
+    ('Lato', 'Lato'),
+  ];
+
+  static const List<Color> _freeColors = [
+    Colors.black,
+    Colors.white,
+    Colors.red,
+    Colors.blue,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.brown,
+  ];
+
   // Task 6: text editing bottom sheet.
   void _openTextEditSheet(BuildContext context) {
     final el = widget.element;
     if (el is! TextElement) return;
+    final isPro = ref.read(isProProvider);
 
     final textController = TextEditingController(text: el.text);
     String text = el.text;
     double fontSize = el.fontSize;
     Color color = el.color;
+    String? fontFamily = el.fontFamily;
+
+    final allFonts = isPro ? [..._freeFonts, ..._proFonts] : _freeFonts;
 
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheetState) => Padding(
+        builder: (ctx, setSheetState) => SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
             16,
             16,
@@ -707,41 +776,149 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
                 max: 96,
                 onChanged: (v) => setSheetState(() => fontSize = v),
               ),
+
+              // ── Font picker ──────────────────────────────────────
               const SizedBox(height: 8),
-              const Text('Color'),
+              Row(
+                children: [
+                  const Text('Font', style: TextStyle(fontWeight: FontWeight.w600)),
+                  if (!isPro) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('Pro unlocks 8 more',
+                          style: TextStyle(fontSize: 10, color: Colors.orange)),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 44,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: allFonts.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  itemBuilder: (context, i) {
+                    final (label, family) = allFonts[i];
+                    final isSelected = fontFamily == family;
+                    TextStyle chipStyle = TextStyle(
+                      fontSize: 13,
+                      color: isSelected ? Colors.white : Colors.black87,
+                    );
+                    if (family != null) {
+                      try {
+                        chipStyle = GoogleFonts.getFont(family, textStyle: chipStyle);
+                      } catch (_) {}
+                    }
+                    return GestureDetector(
+                      onTap: () => setSheetState(() => fontFamily = family),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? Theme.of(ctx).colorScheme.primary : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? Theme.of(ctx).colorScheme.primary : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Text(label, style: chipStyle),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // ── Color picker ─────────────────────────────────────
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Text('Color', style: TextStyle(fontWeight: FontWeight.w600)),
+                  if (!isPro) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('Pro: custom color',
+                          style: TextStyle(fontSize: 10, color: Colors.orange)),
+                    ),
+                  ],
+                ],
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Colors.black,
-                  Colors.white,
-                  Colors.red,
-                  Colors.pink,
-                  Colors.purple,
-                  Colors.blue,
-                  Colors.green,
-                  Colors.orange,
-                  Colors.yellow,
-                  Colors.brown,
-                ]
-                    .map(
-                      (c) => GestureDetector(
-                        onTap: () => setSheetState(() => color = c),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: c,
-                            shape: BoxShape.circle,
-                            border: color == c
-                                ? Border.all(color: Colors.blue, width: 3)
-                                : Border.all(color: Colors.grey.shade300),
-                          ),
+                  ..._freeColors.map(
+                    (c) => GestureDetector(
+                      onTap: () => setSheetState(() => color = c),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: color == c
+                              ? Border.all(color: Colors.blue, width: 3)
+                              : Border.all(color: Colors.grey.shade300),
                         ),
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ),
+                  // Pro: custom color picker button
+                  if (isPro)
+                    GestureDetector(
+                      onTap: () async {
+                        Color picked = color;
+                        await showDialog<void>(
+                          context: ctx,
+                          builder: (dlgCtx) => AlertDialog(
+                            title: const Text('Pick a color'),
+                            content: SingleChildScrollView(
+                              child: ColorPicker(
+                                pickerColor: picked,
+                                onColorChanged: (c) => picked = c,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dlgCtx),
+                                child: const Text('Cancel'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(dlgCtx),
+                                child: const Text('Select'),
+                              ),
+                            ],
+                          ),
+                        );
+                        setSheetState(() => color = picked);
+                      },
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          gradient: const SweepGradient(colors: [
+                            Colors.red, Colors.orange, Colors.yellow,
+                            Colors.green, Colors.blue, Colors.purple, Colors.red,
+                          ]),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: const Icon(Icons.add, size: 16, color: Colors.white),
+                      ),
+                    ),
+                ],
               ),
+
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -752,6 +929,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
                             text: text,
                             fontSize: fontSize,
                             color: color,
+                            fontFamily: fontFamily,
                           ),
                         );
                     Navigator.pop(ctx);
@@ -893,12 +1071,26 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
     ];
   }
 
+  TextStyle _buildTextStyle({
+    required double fontSize,
+    required Color color,
+    String? fontFamily,
+  }) {
+    final base = TextStyle(fontSize: fontSize, color: color);
+    if (fontFamily == null) return base;
+    try {
+      return GoogleFonts.getFont(fontFamily, textStyle: base);
+    } catch (_) {
+      return base;
+    }
+  }
+
   Widget _buildElementContent() {
     return switch (widget.element) {
-      TextElement(:final text, :final fontSize, :final color) => Center(
+      TextElement(:final text, :final fontSize, :final color, :final fontFamily) => Center(
           child: Text(
             text,
-            style: TextStyle(fontSize: fontSize, color: color),
+            style: _buildTextStyle(fontSize: fontSize, color: color, fontFamily: fontFamily),
             textAlign: TextAlign.center,
           ),
         ),
@@ -961,105 +1153,6 @@ class _ResizeHandleState extends State<_ResizeHandle> {
           color: Colors.white,
           border: Border.all(color: Colors.blue, width: 1.5),
           borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Text layout preset card (used in the layout picker bottom sheet)
-// ---------------------------------------------------------------------------
-
-class _TextLayoutPresetCard extends StatelessWidget {
-  const _TextLayoutPresetCard({
-    required this.preset,
-    required this.onTap,
-    this.isLocked = false,
-  });
-
-  final TextLayoutPreset preset;
-  final VoidCallback onTap;
-  final bool isLocked;
-
-  // Canvas reference dimensions matching text_layout_presets.dart
-  static const double _refWidth = 360;
-  static const double _refHeight = 600;
-  static const double _previewWidth = 120;
-  static const double _previewHeight = 80;
-  static const double _scaleX = _previewWidth / _refWidth;
-  static const double _scaleY = _previewHeight / _refHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            // Visual preview
-            Container(
-              width: _previewWidth,
-              height: _previewHeight,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: preset.items.map((item) {
-                  return Positioned(
-                    left: item.x * _scaleX,
-                    top: item.y * _scaleY,
-                    width: item.width * _scaleX,
-                    height: item.height * _scaleY,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.blueGrey.shade200,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Name and description
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    preset.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    preset.description,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            if (isLocked)
-              const Icon(Icons.lock, color: Colors.amber)
-            else
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
-          ],
         ),
       ),
     );
@@ -1284,11 +1377,12 @@ class _EditorToolbar extends ConsumerWidget {
               );
             }
 
-            // Pro layout: sections + custom color button.
+            // Pro layout: patterns + color sections + custom color button.
             final sections = _proSections.entries.toList();
+            final currentPattern = ref.read(editorProvider).canvasPattern;
             return DraggableScrollableSheet(
               expand: false,
-              initialChildSize: 0.65,
+              initialChildSize: 0.75,
               minChildSize: 0.4,
               maxChildSize: 0.92,
               builder: (ctx2, scrollController) => Padding(
@@ -1298,10 +1392,68 @@ class _EditorToolbar extends ConsumerWidget {
                   children: [
                     const Text(
                       'Canvas background',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 12),
+                    // ── Patterns section ──────────────────────────────────
+                    const Text(
+                      'Patterns',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black54,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: proPatterns.map((p) {
+                        final isSelected = currentPattern == p.id;
+                        return GestureDetector(
+                          onTap: () {
+                            ref.read(editorProvider.notifier).updateCanvasPattern(p.id);
+                            Navigator.pop(ctx);
+                          },
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 52,
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: isSelected
+                                      ? Border.all(color: Colors.blue, width: 3)
+                                      : Border.all(color: Colors.grey.shade300),
+                                ),
+                                clipBehavior: Clip.hardEdge,
+                                child: CustomPaint(
+                                  painter: getPatternPainter(p.id),
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              SizedBox(
+                                width: 58,
+                                child: Text(
+                                  p.label,
+                                  style: const TextStyle(fontSize: 9),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    // ── Solid colors ──────────────────────────────────────
                     ...sections.map((section) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1319,8 +1471,7 @@ class _EditorToolbar extends ConsumerWidget {
                           Wrap(
                             spacing: 10,
                             runSpacing: 10,
-                            children:
-                                section.value.map((c) => colorSwatch(c)).toList(),
+                            children: section.value.map((c) => colorSwatch(c)).toList(),
                           ),
                           const SizedBox(height: 16),
                         ],
@@ -1377,124 +1528,101 @@ class _EditorToolbar extends ConsumerWidget {
     );
   }
 
-  // Text layout preset picker bottom sheet.
-  void _showLayoutPicker(BuildContext context, WidgetRef ref) {
-    final isPro = ref.read(isProProvider);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        builder: (ctx, scrollController) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'Text Layouts',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-            ),
-            Expanded(
-              child: ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                itemCount: textLayoutPresets.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (ctx, index) {
-                  final preset = textLayoutPresets[index];
-                  // Presets at index >= 3 are considered pro-only.
-                  final isProPreset = index >= 3;
-                  final isLocked = isProPreset && !isPro;
-                  return _TextLayoutPresetCard(
-                    preset: preset,
-                    isLocked: isLocked,
-                    onTap: () {
-                      if (isLocked) {
-                        Navigator.pop(ctx);
-                        onShowUpgradeSheet();
-                        return;
-                      }
-                      final scaleX = canvasSize.width / _kRefWidth;
-                      final scaleY = canvasSize.height / _kRefHeight;
-                      final scaleFont = min(scaleX, scaleY);
-
-                      final base =
-                          DateTime.now().millisecondsSinceEpoch;
-                      for (var i = 0; i < preset.items.length; i++) {
-                        final item = preset.items[i];
-                        final scaledX =
-                            (item.x * scaleX).clamp(0.0, canvasSize.width);
-                        final scaledY =
-                            (item.y * scaleY).clamp(0.0, canvasSize.height);
-                        final scaledW =
-                            (item.width * scaleX).clamp(0.0, canvasSize.width);
-                        final scaledH = (item.height * scaleY)
-                            .clamp(0.0, canvasSize.height);
-                        ref.read(editorProvider.notifier).addElement(
-                              TextElement(
-                                id: '${base}_$i',
-                                x: scaledX,
-                                y: scaledY,
-                                width: scaledW,
-                                height: scaledH,
-                                text: item.defaultText,
-                                fontSize: item.fontSize * scaleFont,
-                                color: Colors.black,
-                              ),
-                            );
-                      }
-                      Navigator.pop(ctx);
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // RSVP QR code dialog + bottom sheet.
   Future<void> _showQrDialog(BuildContext context, WidgetRef ref) async {
-    final titleController = TextEditingController();
-
-    final confirmed = await showDialog<bool>(
+    // Use dialog that returns the typed string directly to avoid
+    // TextEditingController dispose-before-animation issues.
+    final result = await showDialog<({String title, DateTime? deadline})>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Create RSVP Event'),
-        content: TextField(
-          controller: titleController,
-          decoration: const InputDecoration(hintText: 'Event Title'),
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+      builder: (ctx) {
+        String value = '';
+        DateTime? deadline;
+        return StatefulBuilder(
+          builder: (ctx, setDlgState) => AlertDialog(
+            title: const Text('Create RSVP Event'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(hintText: 'Event Title'),
+                  onChanged: (v) => value = v,
+                ),
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: DateTime.now().add(const Duration(days: 7)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (picked != null) {
+                      setDlgState(() => deadline = picked);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.event, size: 18,
+                            color: Colors.black54),
+                        const SizedBox(width: 8),
+                        Text(
+                          deadline == null
+                              ? 'RSVP Deadline (optional)'
+                              : '${deadline!.year}/${deadline!.month.toString().padLeft(2, '0')}/${deadline!.day.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            color: deadline == null
+                                ? Colors.black45
+                                : Colors.black87,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (deadline != null) ...[
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () =>
+                                setDlgState(() => deadline = null),
+                            child: const Icon(Icons.close,
+                                size: 16, color: Colors.black45),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, (
+                  title: value.trim().isEmpty ? 'My Event' : value.trim(),
+                  deadline: deadline,
+                )),
+                child: const Text('Create'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+        );
+      },
     );
 
-    final title = titleController.text.trim().isEmpty
-        ? 'My Event'
-        : titleController.text.trim();
-    titleController.dispose();
-    if (confirmed != true || !context.mounted) return;
+    if (result == null || !context.mounted) return;
 
-    final event =
-        await ref.read(rsvpProvider.notifier).createEvent(title);
+    final event = await ref
+        .read(rsvpProvider.notifier)
+        .createEvent(result.title, deadline: result.deadline);
     final qrData = 'invite://rsvp/${event.id}';
     onEventCreated(event.id);
 
@@ -1745,11 +1873,6 @@ class _EditorToolbar extends ConsumerWidget {
             icon: const Icon(Icons.emoji_emotions),
             tooltip: 'Add Sticker',
             onPressed: () => _showStickerPicker(context, ref),
-          ),
-          IconButton(
-            icon: const Icon(Icons.view_quilt),
-            tooltip: 'Text Layouts',
-            onPressed: () => _showLayoutPicker(context, ref),
           ),
           IconButton(
             icon: const Icon(Icons.qr_code),

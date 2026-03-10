@@ -28,11 +28,13 @@ class TextElement extends CanvasElement {
     required this.text,
     required this.fontSize,
     required this.color,
+    this.fontFamily,
   });
 
   final String text;
   final double fontSize;
   final Color color;
+  final String? fontFamily;
 
   @override
   TextElement copyWith({
@@ -43,6 +45,7 @@ class TextElement extends CanvasElement {
     String? text,
     double? fontSize,
     Color? color,
+    Object? fontFamily = _sentinel,
   }) {
     return TextElement(
       id: id,
@@ -53,9 +56,14 @@ class TextElement extends CanvasElement {
       text: text ?? this.text,
       fontSize: fontSize ?? this.fontSize,
       color: color ?? this.color,
+      fontFamily: fontFamily == _sentinel
+          ? this.fontFamily
+          : fontFamily as String?,
     );
   }
 }
+
+const _sentinel = Object();
 
 class ImageElement extends CanvasElement {
   const ImageElement({
