@@ -55,3 +55,4 @@ app.*.map.json
 *.pptx
 *.txt
 *.csv
+android/key.properties
