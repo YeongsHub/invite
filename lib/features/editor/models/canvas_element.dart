@@ -73,9 +73,11 @@ class ImageElement extends CanvasElement {
     required super.width,
     required super.height,
     required this.imagePath,
+    this.isPolaroid = false,
   });
 
   final String imagePath;
+  final bool isPolaroid;
 
   @override
   ImageElement copyWith({
@@ -84,6 +86,7 @@ class ImageElement extends CanvasElement {
     double? width,
     double? height,
     String? imagePath,
+    bool? isPolaroid,
   }) {
     return ImageElement(
       id: id,
@@ -92,6 +95,7 @@ class ImageElement extends CanvasElement {
       width: width ?? this.width,
       height: height ?? this.height,
       imagePath: imagePath ?? this.imagePath,
+      isPolaroid: isPolaroid ?? this.isPolaroid,
     );
   }
 }

@@ -1094,6 +1094,9 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
             textAlign: TextAlign.center,
           ),
         ),
+      ImageElement(:final imagePath, :final isPolaroid) when isPolaroid => PolaroidFrame(
+          imagePath: imagePath,
+        ),
       ImageElement(:final imagePath) => Image.file(
           File(imagePath),
           fit: BoxFit.contain,
@@ -1832,8 +1835,8 @@ class _EditorToolbar extends ConsumerWidget {
                 onShowUpgradeSheet();
                 return;
               }
-              // Show bottom sheet: gallery or camera
-              final source = await showModalBottomSheet<ImageSource>(
+              // Show bottom sheet: gallery, camera, or polaroid
+              final pick = await showModalBottomSheet<(ImageSource, bool)>(
                 context: context,
                 builder: (ctx) => SafeArea(
                   child: Column(
@@ -1842,18 +1845,25 @@ class _EditorToolbar extends ConsumerWidget {
                       ListTile(
                         leading: const Icon(Icons.photo_library),
                         title: const Text('Choose from Gallery'),
-                        onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+                        onTap: () => Navigator.pop(ctx, (ImageSource.gallery, false)),
                       ),
                       ListTile(
                         leading: const Icon(Icons.camera_alt),
                         title: const Text('Take a Photo'),
-                        onTap: () => Navigator.pop(ctx, ImageSource.camera),
+                        onTap: () => Navigator.pop(ctx, (ImageSource.camera, false)),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.camera_outlined),
+                        title: const Text('Polaroid Photo'),
+                        subtitle: const Text('사진을 폴라로이드 프레임으로 추가'),
+                        onTap: () => Navigator.pop(ctx, (ImageSource.camera, true)),
                       ),
                     ],
                   ),
                 ),
               );
-              if (source == null) return;
+              if (pick == null) return;
+              final (source, isPolaroid) = pick;
               final picked = await ImagePicker().pickImage(source: source);
               if (picked == null) return;
               ref.read(editorProvider.notifier).addElement(
@@ -1862,8 +1872,9 @@ class _EditorToolbar extends ConsumerWidget {
                       x: (canvasSize.width - 200) / 2,
                       y: (canvasSize.height - 200) / 2,
                       width: 200,
-                      height: 200,
+                      height: isPolaroid ? 240 : 200,
                       imagePath: picked.path,
+                      isPolaroid: isPolaroid,
                     ),
                   );
             },
@@ -1890,6 +1901,40 @@ class _EditorToolbar extends ConsumerWidget {
             ),
         ],
       ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Polaroid frame widget
+// ---------------------------------------------------------------------------
+
+class PolaroidFrame extends StatelessWidget {
+  const PolaroidFrame({super.key, required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(2, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 28),
+      child: Image.file(
+        File(imagePath),
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => const Center(
+          child: Icon(Icons.broken_image, color: Colors.grey),
+        ),
       ),
     );
   }
