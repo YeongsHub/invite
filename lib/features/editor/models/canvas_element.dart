@@ -7,6 +7,7 @@ abstract class CanvasElement {
     required this.y,
     required this.width,
     required this.height,
+    this.rotation = 0.0,
   });
 
   final String id;
@@ -14,8 +15,15 @@ abstract class CanvasElement {
   final double y;
   final double width;
   final double height;
+  final double rotation;
 
-  CanvasElement copyWith({double? x, double? y, double? width, double? height});
+  CanvasElement copyWith({
+    double? x,
+    double? y,
+    double? width,
+    double? height,
+    double? rotation,
+  });
 }
 
 class TextElement extends CanvasElement {
@@ -25,6 +33,7 @@ class TextElement extends CanvasElement {
     required super.y,
     required super.width,
     required super.height,
+    super.rotation,
     required this.text,
     required this.fontSize,
     required this.color,
@@ -42,6 +51,7 @@ class TextElement extends CanvasElement {
     double? y,
     double? width,
     double? height,
+    double? rotation,
     String? text,
     double? fontSize,
     Color? color,
@@ -53,6 +63,7 @@ class TextElement extends CanvasElement {
       y: y ?? this.y,
       width: width ?? this.width,
       height: height ?? this.height,
+      rotation: rotation ?? this.rotation,
       text: text ?? this.text,
       fontSize: fontSize ?? this.fontSize,
       color: color ?? this.color,
@@ -72,6 +83,7 @@ class ImageElement extends CanvasElement {
     required super.y,
     required super.width,
     required super.height,
+    super.rotation,
     required this.imagePath,
     this.isPolaroid = false,
   });
@@ -85,6 +97,7 @@ class ImageElement extends CanvasElement {
     double? y,
     double? width,
     double? height,
+    double? rotation,
     String? imagePath,
     bool? isPolaroid,
   }) {
@@ -94,6 +107,7 @@ class ImageElement extends CanvasElement {
       y: y ?? this.y,
       width: width ?? this.width,
       height: height ?? this.height,
+      rotation: rotation ?? this.rotation,
       imagePath: imagePath ?? this.imagePath,
       isPolaroid: isPolaroid ?? this.isPolaroid,
     );
@@ -107,6 +121,7 @@ class StickerElement extends CanvasElement {
     required super.y,
     required super.width,
     required super.height,
+    super.rotation,
     required this.stickerAsset,
   });
 
@@ -118,6 +133,7 @@ class StickerElement extends CanvasElement {
     double? y,
     double? width,
     double? height,
+    double? rotation,
     String? stickerAsset,
   }) {
     return StickerElement(
@@ -126,6 +142,7 @@ class StickerElement extends CanvasElement {
       y: y ?? this.y,
       width: width ?? this.width,
       height: height ?? this.height,
+      rotation: rotation ?? this.rotation,
       stickerAsset: stickerAsset ?? this.stickerAsset,
     );
   }
@@ -138,6 +155,7 @@ class QrElement extends CanvasElement {
     required super.y,
     required super.width,
     required super.height,
+    super.rotation,
     required this.data,
   });
 
@@ -150,6 +168,7 @@ class QrElement extends CanvasElement {
     double? y,
     double? width,
     double? height,
+    double? rotation,
     String? data,
   }) {
     return QrElement(
@@ -158,6 +177,7 @@ class QrElement extends CanvasElement {
       y: y ?? this.y,
       width: width ?? this.width,
       height: height ?? this.height,
+      rotation: rotation ?? this.rotation,
       data: data ?? this.data,
     );
   }

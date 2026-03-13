@@ -681,7 +681,13 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
   double _y = 0;
   double _w = 0;
   double _h = 0;
+  double _rotation = 0;
   bool _dragging = false;
+
+  // Used to find the element's center in global coordinates for rotation.
+  final _elementKey = GlobalKey();
+  Offset? _rotateStartVec;
+  double _rotationAtStart = 0;
 
   @override
   void initState() {
@@ -690,6 +696,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
     _y = widget.element.y;
     _w = widget.element.width;
     _h = widget.element.height;
+    _rotation = widget.element.rotation;
   }
 
   @override
@@ -701,6 +708,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
       _y = widget.element.y;
       _w = widget.element.width;
       _h = widget.element.height;
+      _rotation = widget.element.rotation;
     }
   }
 
@@ -944,6 +952,18 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
     ).whenComplete(textController.dispose);
   }
 
+  void _syncElement() {
+    ref.read(editorProvider.notifier).moveElement(
+          widget.element.copyWith(
+            x: _x,
+            y: _y,
+            width: _w,
+            height: _h,
+            rotation: _rotation,
+          ),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -951,46 +971,94 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
       top: _y,
       width: _w,
       height: _h,
+      child: Transform.rotate(
+        angle: _rotation,
+        child: GestureDetector(
+          key: _elementKey,
+          onTap: () {
+            // Task 6: tap selected TextElement to open edit sheet.
+            if (widget.isSelected && widget.element is TextElement) {
+              _openTextEditSheet(context);
+            } else {
+              ref.read(editorProvider.notifier).selectElement(widget.element.id);
+            }
+          },
+          onPanStart: (_) {
+            _dragging = true;
+            ref.read(editorProvider.notifier).pushHistory();
+          },
+          onPanUpdate: (details) {
+            setState(() {
+              _x += details.delta.dx;
+              _y += details.delta.dy;
+            });
+            _syncElement();
+          },
+          onPanEnd: (_) => _dragging = false,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: widget.isSelected
+                    ? BoxDecoration(
+                        border: Border.all(color: Colors.blue, width: 2),
+                        borderRadius: BorderRadius.circular(4),
+                      )
+                    : null,
+                child: _buildElementContent(),
+              ),
+              // Corner resize handles when selected.
+              if (widget.isSelected) ..._buildResizeHandles(),
+              // Rotation handle above the element when selected.
+              if (widget.isSelected) _buildRotationHandle(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRotationHandle() {
+    return Positioned(
+      top: -36,
+      left: _w / 2 - 12,
       child: GestureDetector(
-        onTap: () {
-          // Task 6: tap selected TextElement to open edit sheet.
-          if (widget.isSelected && widget.element is TextElement) {
-            _openTextEditSheet(context);
-          } else {
-            ref.read(editorProvider.notifier).selectElement(widget.element.id);
-          }
-        },
-        onPanStart: (_) {
-          _dragging = true;
+        onPanStart: (details) {
           ref.read(editorProvider.notifier).pushHistory();
+          _rotationAtStart = _rotation;
+          final box = _elementKey.currentContext?.findRenderObject() as RenderBox?;
+          if (box == null) return;
+          final center = box.localToGlobal(Offset(_w / 2, _h / 2));
+          _rotateStartVec = details.globalPosition - center;
         },
         onPanUpdate: (details) {
+          final box = _elementKey.currentContext?.findRenderObject() as RenderBox?;
+          if (box == null || _rotateStartVec == null) return;
+          final center = box.localToGlobal(Offset(_w / 2, _h / 2));
+          final currentVec = details.globalPosition - center;
+          final startAngle = atan2(_rotateStartVec!.dy, _rotateStartVec!.dx);
+          final currentAngle = atan2(currentVec.dy, currentVec.dx);
           setState(() {
-            _x += details.delta.dx;
-            _y += details.delta.dy;
+            _rotation = _rotationAtStart + (currentAngle - startAngle);
           });
-          ref.read(editorProvider.notifier).moveElement(
-                widget.element.copyWith(x: _x, y: _y),
-              );
+          _syncElement();
         },
-        onPanEnd: (_) => _dragging = false,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: widget.isSelected
-                  ? BoxDecoration(
-                      border: Border.all(color: Colors.blue, width: 2),
-                      borderRadius: BorderRadius.circular(4),
-                    )
-                  : null,
-              child: _buildElementContent(),
-            ),
-            // Task 9: corner resize handles when selected.
-            if (widget.isSelected) ..._buildResizeHandles(),
-          ],
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.blue,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: const Icon(Icons.rotate_right, color: Colors.white, size: 16),
         ),
       ),
     );
@@ -999,9 +1067,6 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
   // Task 9: four corner resize handles.
   List<Widget> _buildResizeHandles() {
     void pushHistory() => ref.read(editorProvider.notifier).pushHistory();
-    void sync() => ref.read(editorProvider.notifier).moveElement(
-          widget.element.copyWith(x: _x, y: _y, width: _w, height: _h),
-        );
 
     return [
       // Top-left
@@ -1017,7 +1082,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
               _w = (_w - dx).clamp(40, double.infinity);
               _h = (_h - dy).clamp(20, double.infinity);
             });
-            sync();
+            _syncElement();
           },
         ),
       ),
@@ -1033,7 +1098,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
               _w = (_w + dx).clamp(40, double.infinity);
               _h = (_h - dy).clamp(20, double.infinity);
             });
-            sync();
+            _syncElement();
           },
         ),
       ),
@@ -1049,7 +1114,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
               _w = (_w - dx).clamp(40, double.infinity);
               _h = (_h + dy).clamp(20, double.infinity);
             });
-            sync();
+            _syncElement();
           },
         ),
       ),
@@ -1064,7 +1129,7 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
               _w = (_w + dx).clamp(40, double.infinity);
               _h = (_h + dy).clamp(20, double.infinity);
             });
-            sync();
+            _syncElement();
           },
         ),
       ),
