@@ -1688,10 +1688,28 @@ class _EditorToolbar extends ConsumerWidget {
 
     if (result == null || !context.mounted) return;
 
+    // Check host email is configured
+    final hostEmail = ref.read(hostSettingsProvider).valueOrNull ?? '';
+    if (hostEmail.isEmpty) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please set your RSVP email in Settings first.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final event = await ref
         .read(rsvpProvider.notifier)
         .createEvent(result.title, deadline: result.deadline);
-    final qrData = 'invite://rsvp/${event.id}';
+
+    final subject = Uri.encodeComponent('RSVP: ${event.title}');
+    final body = Uri.encodeComponent(
+      'Name: \nAttending: Yes / No\nNumber of guests: \nMessage: ',
+    );
+    final qrData = 'mailto:$hostEmail?subject=$subject&body=$body';
     onEventCreated(event.id);
 
     if (!context.mounted) return;

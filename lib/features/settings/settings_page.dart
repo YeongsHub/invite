@@ -25,12 +25,64 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  Future<void> _editEmail(BuildContext context, WidgetRef ref, String current) async {
+    final controller = TextEditingController(text: current);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('RSVP Email'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(
+            hintText: 'your@email.com',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result != null && context.mounted) {
+      await ref.read(hostSettingsProvider.notifier).setEmail(result);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final emailAsync = ref.watch(hostSettingsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
+          const _SectionHeader('RSVP'),
+          emailAsync.when(
+            loading: () => const ListTile(title: Text('Loading...')),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (email) => ListTile(
+              leading: const Icon(Icons.email_outlined),
+              title: const Text('RSVP Email'),
+              subtitle: Text(
+                email.isEmpty ? 'Tap to set your email' : email,
+                style: TextStyle(
+                  color: email.isEmpty ? Colors.red.shade400 : Colors.black54,
+                ),
+              ),
+              trailing: const Icon(Icons.edit, size: 18),
+              onTap: () => _editEmail(context, ref, email),
+            ),
+          ),
+          const Divider(),
           const _SectionHeader('Support'),
           ListTile(
             leading: const Icon(Icons.help_outline),

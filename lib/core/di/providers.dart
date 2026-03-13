@@ -7,6 +7,7 @@ import 'purchase_service.dart';
 
 export 'subscription_provider.dart';
 export 'rsvp_provider.dart';
+export 'host_settings_provider.dart';
 export 'purchase_service.dart' show kProMonthlyId, kProYearlyId;
 
 final appRouterProvider = Provider<GoRouter>((ref) => buildAppRouter());

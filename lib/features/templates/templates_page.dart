@@ -246,7 +246,12 @@ class _TemplateCard extends ConsumerWidget {
                 Expanded(
                   flex: 55,
                   child: Container(
-                    color: palette.background,
+                    decoration: BoxDecoration(
+                      color: palette.background,
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(12),
+                      ),
+                    ),
                     padding:
                         const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     child: Column(
