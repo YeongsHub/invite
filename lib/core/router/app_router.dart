@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:invite/features/templates/templates_page.dart';
 import 'package:invite/features/editor/editor_page.dart';
-import 'package:invite/features/rsvp/rsvp_response_page.dart';
-import 'package:invite/features/rsvp/rsvp_list_page.dart';
 import 'package:invite/features/settings/settings_page.dart';
 import 'package:invite/features/settings/faq_page.dart';
 import 'package:invite/features/settings/privacy_policy_page.dart';
@@ -29,20 +27,6 @@ GoRouter buildAppRouter() => GoRouter(
           builder: (context, state) {
             final extra = state.extra as EditorRouteExtra?;
             return EditorPage(templateId: extra?.templateId);
-          },
-        ),
-        GoRoute(
-          path: '/rsvp/:eventId',
-          builder: (context, state) {
-            final eventId = state.pathParameters['eventId']!;
-            return RsvpResponsePage(eventId: eventId);
-          },
-        ),
-        GoRoute(
-          path: '/rsvp-list/:eventId',
-          builder: (context, state) {
-            final eventId = state.pathParameters['eventId']!;
-            return RsvpListPage(eventId: eventId);
           },
         ),
         GoRoute(

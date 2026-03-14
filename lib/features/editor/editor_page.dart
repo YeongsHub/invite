@@ -41,9 +41,6 @@ class _EditorPageState extends ConsumerState<EditorPage> {
   /// Actual canvas size, captured once the LayoutBuilder has measured it.
   Size? _canvasSize;
 
-  /// Tracks the most recently created RSVP event for "View Responses" button.
-  String? _currentEventId;
-
   @override
   void initState() {
     super.initState();
@@ -566,12 +563,6 @@ class _EditorPageState extends ConsumerState<EditorPage> {
           onPressed: () => context.pop(),
         ),
         actions: [
-          if (_currentEventId != null)
-            IconButton(
-              icon: const Icon(Icons.list_alt),
-              tooltip: 'View RSVP Responses',
-              onPressed: () => context.push('/rsvp-list/$_currentEventId'),
-            ),
           IconButton(
             icon: const Icon(Icons.download),
             tooltip: 'Export PNG',
@@ -646,9 +637,6 @@ class _EditorPageState extends ConsumerState<EditorPage> {
               _EditorToolbar(
                 canvasSize: canvasSize,
                 onShowUpgradeSheet: () => _showUpgradeSheet(context),
-                onEventCreated: (eventId) {
-                  setState(() => _currentEventId = eventId);
-                },
               ),
             ],
           );
@@ -1245,12 +1233,10 @@ class _EditorToolbar extends ConsumerWidget {
   const _EditorToolbar({
     required this.canvasSize,
     required this.onShowUpgradeSheet,
-    required this.onEventCreated,
   });
 
   final Size canvasSize;
   final VoidCallback onShowUpgradeSheet;
-  final void Function(String eventId) onEventCreated;
 
   // Free tier: first 8 basic colors only.
   static const List<Color> _freeColors = [
@@ -1606,123 +1592,55 @@ class _EditorToolbar extends ConsumerWidget {
     );
   }
 
-  // RSVP QR code dialog + bottom sheet.
+  // QR code dialog + bottom sheet.
   Future<void> _showQrDialog(BuildContext context, WidgetRef ref) async {
-    // Use dialog that returns the typed string directly to avoid
-    // TextEditingController dispose-before-animation issues.
-    final result = await showDialog<({String title, DateTime? deadline})>(
-      context: context,
-      builder: (ctx) {
-        String value = '';
-        DateTime? deadline;
-        return StatefulBuilder(
-          builder: (ctx, setDlgState) => AlertDialog(
-            title: const Text('Create RSVP Event'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  autofocus: true,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(hintText: 'Event Title'),
-                  onChanged: (v) => value = v,
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: ctx,
-                      initialDate: DateTime.now().add(const Duration(days: 7)),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      setDlgState(() => deadline = picked);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade400),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.event, size: 18,
-                            color: Colors.black54),
-                        const SizedBox(width: 8),
-                        Text(
-                          deadline == null
-                              ? 'RSVP Deadline (optional)'
-                              : '${deadline!.year}/${deadline!.month.toString().padLeft(2, '0')}/${deadline!.day.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            color: deadline == null
-                                ? Colors.black45
-                                : Colors.black87,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (deadline != null) ...[
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: () =>
-                                setDlgState(() => deadline = null),
-                            child: const Icon(Icons.close,
-                                size: 16, color: Colors.black45),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, (
-                  title: value.trim().isEmpty ? 'My Event' : value.trim(),
-                  deadline: deadline,
-                )),
-                child: const Text('Create'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (result == null || !context.mounted) return;
-
-    // Check host email is configured
+    // Check host email is configured first
     final hostEmail = ref.read(hostSettingsProvider).valueOrNull ?? '';
     if (hostEmail.isEmpty) {
-      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please set your RSVP email in Settings first.'),
+          content: Text('Please set your email in Settings first.'),
           duration: Duration(seconds: 3),
         ),
       );
       return;
     }
 
-    final event = await ref
-        .read(rsvpProvider.notifier)
-        .createEvent(result.title, deadline: result.deadline);
+    final title = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        String value = '';
+        return AlertDialog(
+          title: const Text('QR Code'),
+          content: TextField(
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(hintText: 'Event Title'),
+            onChanged: (v) => value = v,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                  ctx, value.trim().isEmpty ? 'My Event' : value.trim()),
+              child: const Text('Create'),
+            ),
+          ],
+        );
+      },
+    );
 
-    final subject = Uri.encodeComponent('RSVP: ${event.title}');
+    if (title == null || !context.mounted) return;
+
+    final subject = Uri.encodeComponent('RSVP: $title');
     final body = Uri.encodeComponent(
       'Name: \nAttending: Yes / No\nNumber of guests: \nMessage: ',
     );
     final qrData = 'mailto:$hostEmail?subject=$subject&body=$body';
-    onEventCreated(event.id);
-
-    if (!context.mounted) return;
+    final qrId = DateTime.now().millisecondsSinceEpoch.toString();
 
     await showModalBottomSheet<void>(
       context: context,
@@ -1741,9 +1659,8 @@ class _EditorToolbar extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              event.title,
-              style: const TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold),
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             QrImageView(
@@ -1757,39 +1674,22 @@ class _EditorToolbar extends ConsumerWidget {
               style: TextStyle(color: Colors.black54),
             ),
             const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.list_alt),
-                    label: const Text('View Responses'),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.push('/rsvp-list/${event.id}');
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add to Canvas'),
-                    onPressed: () {
-                      ref.read(editorProvider.notifier).addElement(
-                            QrElement(
-                              id: event.id,
-                              x: (canvasSize.width - 150) / 2,
-                              y: (canvasSize.height - 150) / 2,
-                              width: 150,
-                              height: 150,
-                              data: qrData,
-                            ),
-                          );
-                      Navigator.pop(ctx);
-                    },
-                  ),
-                ),
-              ],
+            FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Add to Canvas'),
+              onPressed: () {
+                ref.read(editorProvider.notifier).addElement(
+                      QrElement(
+                        id: qrId,
+                        x: (canvasSize.width - 150) / 2,
+                        y: (canvasSize.height - 150) / 2,
+                        width: 150,
+                        height: 150,
+                        data: qrData,
+                      ),
+                    );
+                Navigator.pop(ctx);
+              },
             ),
           ],
         ),

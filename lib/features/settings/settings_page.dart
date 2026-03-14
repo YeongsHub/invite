@@ -65,13 +65,13 @@ class SettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
-          const _SectionHeader('RSVP'),
+          const _SectionHeader('QR Code'),
           emailAsync.when(
             loading: () => const ListTile(title: Text('Loading...')),
             error: (_, _) => const SizedBox.shrink(),
             data: (email) => ListTile(
               leading: const Icon(Icons.email_outlined),
-              title: const Text('RSVP Email'),
+              title: const Text('Email for QR Code'),
               subtitle: Text(
                 email.isEmpty ? 'Tap to set your email' : email,
                 style: TextStyle(
