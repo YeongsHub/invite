@@ -66,7 +66,7 @@ class PrivacyPolicyPage extends StatelessWidget {
             ),
             _Section(
               title: '8. Contact Us',
-              body: 'If you have questions about this Privacy Policy, please contact:\nsupport@invite-app.com',
+              body: 'If you have questions about this Privacy Policy, please contact:\ngridnflow@gmail.com',
             ),
           ],
         ),
