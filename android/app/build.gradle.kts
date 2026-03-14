@@ -14,7 +14,7 @@ if (keyPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.gridnflow.invito"
+    namespace = "com.pf.invite"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -37,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.gridnflow.invito"
+        applicationId = "com.pf.invite"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

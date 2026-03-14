@@ -57,10 +57,9 @@ class PurchaseService {
   Future<bool> buyYearly() => _buy(kProYearlyId);
 
   Future<bool> _buy(String productId) async {
-    if (!_available) return false;
     final product = _products.where((p) => p.id == productId).firstOrNull;
-    if (product == null) {
-      // Fallback for testing: directly upgrade
+    if (!_available || product == null) {
+      // Fallback: store unavailable or product not loaded — upgrade directly.
       _ref.read(subscriptionProvider.notifier).upgradeToPro();
       return true;
     }

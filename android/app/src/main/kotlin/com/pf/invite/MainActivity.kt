@@ -1,4 +1,4 @@
-package com.gridnflow.invito
+package com.pf.invite
 
 import io.flutter.embedding.android.FlutterActivity
 
