@@ -954,7 +954,10 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
 
   @override
   Widget build(BuildContext context) {
-    const double rotateHandleHeight = 40.0;
+    // Extra space above the element to fit the rotation handle touch target.
+    // 56px keeps the 48px touch target fully within hit-testable bounds.
+    const double rotateHandleHeight = 56.0;
+    const double touchTargetSize = 48.0;
     final double extraTop = widget.isSelected ? rotateHandleHeight : 0.0;
 
     return Positioned(
@@ -965,12 +968,13 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Rotation handle – placed within the extended bounds so touch works on mobile.
+          // Rotation handle – 48×48 touch target so it's reachable on real devices.
           if (widget.isSelected)
             Positioned(
-              top: rotateHandleHeight - 36,
-              left: _w / 2 - 12,
+              top: rotateHandleHeight - touchTargetSize, // = 8, within bounds
+              left: _w / 2 - touchTargetSize / 2,
               child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onPanStart: (details) {
                   ref.read(editorProvider.notifier).pushHistory();
                   _rotationAtStart = _rotation;
@@ -991,20 +995,27 @@ class _CanvasElementWidgetState extends ConsumerState<_CanvasElementWidget> {
                   });
                   _syncElement();
                 },
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 4,
+                onPanEnd: (_) => _rotateStartVec = null,
+                child: SizedBox(
+                  width: touchTargetSize,
+                  height: touchTargetSize,
+                  child: Center(
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
-                    ],
+                      child: const Icon(Icons.rotate_right, color: Colors.white, size: 18),
+                    ),
                   ),
-                  child: const Icon(Icons.rotate_right, color: Colors.white, size: 16),
                 ),
               ),
             ),
